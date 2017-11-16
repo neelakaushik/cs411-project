@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+ 
+{% if data %}
+<h4>{{'Email: ' + data[0][0]}}</h4>
+<h4>{{'Name: ' + data[0][1] + ' ' + data[0][2]}}</h4>
+<h4>{{'Address: ' + data[0][4]}}</h4>
+{% endif %}
+<br>
+
+{% if favorites %}
+
+  <h4>Here are your past 5 searches</h4>
+
+  {% for fav in favorites %}
+      <h4>{{fav[1]}}</h4>
+      <h4>{{'Location: ' + fav[0]}}</h4>
+      <br>
+
+  {% endfor %}
+
+{% endif %}
+
+<head>
+    <title>Crime Search</title>
+ 
+ 
+</head>
+ 
+<body>
+    <center>
+        <div class = "vertical-center">
+            <div class="title">
+            <h1>This is your Profile</h1>
+        </div>
+        <ul>
+        <li><a href='/search'>Make a crime search</a></li>
+        <li><a href='/logout'>Logout</a></li>
+        <li><a href="/">Home</a></li>
+
+
+
+ 
+    </div>
+</body>
+ 
+</html>
