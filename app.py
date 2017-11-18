@@ -18,6 +18,12 @@ import pprint
 
 
 authorization_code = None
+latitude = 0
+longitude = 0
+end_lat = 0
+end_long = 0
+DESTINATION = ''
+ride_id = ''
 final_message = ''
 mysql = MySQL()
 
@@ -139,7 +145,7 @@ def unauthorized_handler():
 
 @app.route('/Lyftregister')
 def lyftregister():
-	return redirect('https://api.lyft.com/oauth/authorize?client_id=_m0S8lSSIgP_&scope=public%20profile%20rides.read%20rides.request%20offline&state=payload&response_type=code')
+	return redirect('https://api.lyft.com/oauth/authorize?client_id=' + client_id + '&scope=public%20profile%20rides.read%20rides.request%20offline&state=payload&response_type=code')
 
 
 
@@ -203,7 +209,8 @@ def register_user():
 		rides = json.loads(lyft_request.text)
 		print('This is your ride history:')
 		for ride in rides["ride_history"]:
-			print("Date/Time of Trip: " + str(ride['dropoff']['time']) + " , Dropped off at: " + str(ride['dropoff']['address']) + " (Distance: " + str(ride['distance_miles']) + " miles)")
+			if ride['status'] == 'droppedOff':
+				print("Date/Time of Trip: " + str(ride['dropoff']['time']) + " , Dropped off at: " + str(ride['dropoff']['address']) + " (Distance: " + str(ride['distance_miles']) + " miles)")
 		return render_template('search.html', message='Account Created!')
 	else:
 		print("couldn't find all tokens")
@@ -377,7 +384,7 @@ def Lyftsummary():
 	##            Call lyft from my location (connected)
  	##	      	-price estimates / hyperlink to web app with pickup/destination locations filled in
 	## 	      Can connect later if guest
-
+	global authorization_code, latitude, longitude, end_lat, end_long, DESTINATION
 	# Get lat, long of current location 
 	if request.method == 'GET':
 		return render_template("Lyftsummary.html")
@@ -388,11 +395,12 @@ def Lyftsummary():
 		latitude = j['latitude']
 		longitude = j['longitude']
 		print(latitude,longitude)
-		# latitude = 42.36
-		# longitude = -71.06
+		#latitude = 42.36
+		#longitude = -71.06
 
 		# Get lat, long of destination
 		destination = request.form.get('destination')
+		DESTINATION = destination
 		destination = destination.replace(' ', '+')
 		response = requests.get('https://maps.googleapis.com/maps/api/geocode/json?address=' + destination)
 		resp_json_payload = response.json()
@@ -401,11 +409,6 @@ def Lyftsummary():
 		end_long = destination['lng']
 
 		# Authentication
-		#with open("lyft_auth.txt", "r") as f:
-		#	data = f.readlines()
-		#	ID = data[0]
-		#	Secret = data[1]
-		#info = ID + ":" + Secret
 		headers = {'Content-Type': 'application/json'}
 		data = '{"grant_type": "client_credentials", "scope": "public"}'
 		authorization = requests.post('https://api.lyft.com/oauth/token', headers=headers, data=data, auth=HTTPBasicAuth(client_id, client_secret))
@@ -441,8 +444,40 @@ def Lyftsummary():
 		# Request a Lyft (requires user login - get into user's lyft account)
 		
 		# Handle Redirect / Get Authorization Code
-		#return redirect('https://api.lyft.com/oauth/authorize?client_id=_m0S8lSSIgP_&scope=public%20profile%20rides.read%20rides.request%20offline&state=payload&response_type=code')
 		return render_template("Lyftsummary.html", message="Search a different destination, or call a Lyft using the link below", data=final_info)
+
+
+@app.route("/RequestLyft", methods=['GET', 'POST'])
+def RequestLyft():
+	global authorization_code, latitude, longitude, end_lat, end_long, DESTINATION, ride_id
+
+	# Get Access Token	
+	headers = {'Content-Type': 'application/json'}
+	data = '{"grant_type": "authorization_code", "code": "' + authorization_code + '"}'
+	authorization = requests.post('https://api.lyft.com/oauth/token', headers=headers, data=data, auth=HTTPBasicAuth(client_id, client_secret))
+	token_info = json.loads(authorization.text)
+	print(token_info)
+	token_type = token_info["token_type"]
+	access_token = token_info["access_token"]
+
+
+	lyft_type = request.args.get('type')
+
+	headers = {'Authorization': token_type + ' ' + access_token, 'Content-Type': 'application/json'}
+	data = '{"ride_type" : "' + lyft_type + '", "origin" : {"lat" : ' + str(latitude) + ', "lng" : ' + str(longitude) + ' }, "destination" : {"lat" : ' + str(end_lat) + ', "lng" : ' + str(end_long) + ', "address" : "' + DESTINATION  + '" } }'
+	
+	print(headers)
+	print(data)
+
+	lyft_request = requests.post('https://api.lyft.com/v1/rides', headers=headers, data=data)
+	print(lyft_request)	
+	ride = json.loads(lyft_request.text)
+	ride_id = ride['ride_id']
+	print(ride_id)
+	return render_template('requested_lyft.html')
+
+
+
 
 # @app.route("/Lyftlogin", methods=['GET', 'POST'])
 # def Lyftlogin():
