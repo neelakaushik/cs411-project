@@ -25,6 +25,9 @@ end_long = 0
 DESTINATION = ''
 ride_id = ''
 final_message = ''
+
+mbta_stops = {}	#{stop_name: [stop_lat, stop_lon]}
+
 mysql = MySQL()
 
 app = Flask(__name__)
@@ -311,6 +314,7 @@ def success():
 
 def get_mbta_api(parameters):
 	''' returns a message to display on the next page '''
+	global mbta_stops
 	message = []
 	#gets stops closest to current location
 	stops_url= "http://realtime.mbta.com/developer/api/v2/stopsbylocation"
@@ -325,6 +329,11 @@ def get_mbta_api(parameters):
 		if distance >= 0.5:
 			continue
 		stop_id = obj['stop_id']
+
+		stop_lat = obj['stop_lat']
+		stop_lon = obj['stop_lon']
+		mbta_stops[stop] = [stop_lat, stop_lon]
+
 		message.append(stop + " is " + str(distance) + " miles away from you\n")
 
 		# get lines that pass through each stop
