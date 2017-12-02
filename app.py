@@ -5,6 +5,8 @@ from flask import jsonify
 import requests
 import json
 import datetime
+import dateutil.parser 
+import numpy as np 
 from urllib.request import urlopen
 from flaskext.mysql import MySQL
 import flask.ext.login as flask_login
@@ -33,7 +35,7 @@ mysql = MySQL()
 app = Flask(__name__)
 app.secret_key = 'super secret string'
 app.config['MYSQL_DATABASE_USER'] = 'root'
-app.config['MYSQL_DATABASE_PASSWORD'] = 'welcome1'
+app.config['MYSQL_DATABASE_PASSWORD'] = 'Welcome1'
 app.config['MYSQL_DATABASE_DB'] = 'crimebuddy'
 app.config['MYSQL_DATABASE_HOST'] = '127.0.0.1'
 mysql.init_app(app)
@@ -285,25 +287,83 @@ def success():
 		res = con.getresponse()
 		data = res.read()
 		json_data = json.loads(data.decode("utf-8"))
-		crime_list = ['Assault', 'Burglary', 'Robbery', 'Shooting', 'Theft']
+		crime_weights={'Assault': 7, 'Burglary': 3, 'Robbery': 6, 'Shooting': 10, 'Theft': 2}
 		crime_count = 0
 		last_date = ''
+		total_weight = 0
+		shooting = False
+
 		for i in range(len(json_data["crimes"])):
-			if json_data["crimes"][i]["type"] in crime_list:
+			crime_type = json_data['crimes'][i]['type'] 
+			if crime_type in crime_weights:
+				if crime_type == 'Shooting':
+					shooting = True
+				weight = crime_weights[crime_type]
+				total_weight += weight
 				crime_count += 1
 			if i == len(json_data["crimes"]) - 1 :
 				last_date = json_data["crimes"][i]["date"]
 
-		if crime_count < 10:
-			message = "This area is generally safe."
-		elif crime_count < 35:
-			message = "Be cautious, the area is considered unsafe. It is recommended to seek a safer route away from your current location."
+		# converts current and last dates into datetime format and grabs only the date
+		temp_last = dateutil.parser.parse(last_date)		
+		last_date = datetime.datetime.date(temp_last)
+		temp_current = dateutil.parser.parse(date)
+		current_date = datetime.datetime.date(temp_current)
+		length = abs((last_date - current_date).days)
+
+		length_type = ''
+		min_val = 0
+		max_val = 0
+		# 100 and 500 = min and max vals that total_weight can be 
+		# creates range, given difference between the current and last date
+		if length <= 7:
+			length = 7
+			length_type = ' week'
+			min_val = 14.28  	# 100/7
+			max_val = 71.42		# 500/7
+		elif length <= 14:
+			length = 14
+			length_type = ' two weeks'
+			min_val = 7.14		# 100/14
+			max_val = 35.71		# 500/14
 		else:
-			message = "This area is considered dangerous. It is highly recommended to seek a safer route away from your current location."
-		print_message1 = "There were {0} high profile crimes committed within {1} mile of your current location since {2}. ".format(crime_count, radius, last_date)
-		print_message2 = "A high profile crime is considered any of the following: Assault, Burglary, Robbery, Shooting, Theft. "
-		print_message3 = message+" See below to call a Lyft and find the closest MBTA stops."
-		final_message = print_message1+print_message2+print_message3
+			length = 30
+			length_type = ' month'
+			min_val = 3.33		# 100/30
+			max_val = 16.66		# 500/30
+		index = float(total_weight)/length
+		rnge = max_val - min_val
+		inc = rnge / 5	
+
+		levels = np.arange(min_val, max_val, inc)
+		levels = levels.tolist()
+		levels += [max_val]
+
+		danger_val = 0
+		for i in range(len(levels)):
+			if index < levels[i]:
+				danger_val = i
+				break
+			if i == len(levels)-1:
+				danger_val = 5
+		
+		message = 'The crime data from the last' + length_type + ' shows that your current location\'s danger level has been deemed '
+		if danger_val == 1:
+			message += 'low.'
+		if danger_val == 2:
+			message += 'moderate.'
+		if danger_val == 3:
+			message += 'considerable.'
+		if danger_val == 4:
+			message += 'high.'
+		if danger_val == 5:
+			message += 'extreme.'
+		if shooting == True:
+			message += '\nPlease be cautious. A shooting has been reported in this area within the last' + length_type + '.'
+		message += '\nRadius around location: '+ str(radius) + ' miles'
+		
+		message_2 = "\nSee below to call a Lyft and find the closest MBTA stops."
+		final_message = message + message_2
 		cursor.execute("INSERT INTO Favorites (user_id, location, type, access_date) VALUES ('{0}', '{1}', '{2}', '{3}')".format(uid,db_location,db_type, date))
 		conn.commit()
 		return render_template("results.html", message=final_message)
