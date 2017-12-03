@@ -1,41 +1,29 @@
 <!DOCTYPE html>
-<html lang="en">
- 
+<html>
 <head>
-    <title>Crime Search</title>
- 
- 
-</head>
- 
+  <link rel="stylesheet" href="../static/styles.css">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 <body>
-    <center>
-        <div class = "vertical-center">
-            <div id="container">
-                <div id="fixedheader" style="margin-top: 100px;padding:0;"> <font size="+6"; face="Wild West">Crime Reports </font> <div> 
-            <div>
 
-            <h2> Search crime by date</h2>
+<div id="login-box">
+  <div class="left">
+    <h1>Log in</h1>
+    <form action='login' method='POST'>
+    <input type='text' name='email' id='email' placeholder='email'></input>
+    <input type='password' name='password' id='password' placeholder='password'></input>
+    
+    <input type="submit" name="submit" value="log in" />
+    </form>
+    <br><br><br>
+    <a class="signup__link" href="/register">New member?</a>
+  </div>
+  
+  <div class="right">
+    <img src="../static/images/buddy-system-logo.png" alt="Buddy System Logo">
 
-            <div class="wrap">
-                <form action="results" method="post">
-                    <input type="text" class="searchTerm" placeholder="Enter a date (mm-dd-yyyy) " name="date" style="padding: 0px; margin: 0px; height: 30px; width: 30%;"></input>
-                    <input type="submit" class="button" value="Search" aria-label="Search" style="font-weight:bold;color:red;width:60px;height:30px;""></input>
-                </form>
-            <div>
-            <div class="Get Lyft Information">
-                <form action="lyftButton" method="post">
-			<input type="text" class="searchTerm" placeholder="Enter your destination (Street Address, City, State) " name="destination" style="padding: 0px; margin: 0px; height: 30px; width: 30%;"></input>
-	    		<input type="submit" class="button" value="Get Lyft Information"> </input>
-                </form>
-            <div>
-            <div class="CallLyft">
-                        <a href="https://ride.lyft.com">Call a Lyft</a>
-            <div>
-        <div>
+  </div>
+</div>
 
-
- 
-    </div>
 </body>
- 
 </html>
