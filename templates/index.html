@@ -1,32 +1,27 @@
 <!DOCTYPE html>
-<html lang="en">
- 
-{% if message %}
-<h4>{{message}}</h4>
-{% endif %}
-
+<html>
 <head>
-    <title>Crime Search</title>
- 
- 
-</head>
- 
+  <link rel="stylesheet" href="../static/styles.css">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 <body>
-    <center>
-        <div class = "vertical-center">
-            <div class="title">
-            <h1>Welcome to CrimeBuddy!</h1>
-        </div>
-        <ul>
-        <li><a href='/Lyftregister'>Login</a></li>
-        <li><a href='/Lyftregister'>Create an account</a> </li> 
-        <li><a href='/logout'>Logout</a></li>
-        <li><a href="/profile">My Profile </a></li>
 
+<div id="login-box">
+  <div class="left">
+    <br><br>
+    <h1>Get Started!</h1>
+    <h3 style="color:#808080">Authenticate with Lyft</h3>
 
+    <br><br><br>
 
- 
-    </div>
+    <a class="submit-token" href="/Lyftregister">Verify with Lyft!</a>
+  </div> 
+  
+  <div class="right">
+    <img src="../static/images/buddy-system-logo.png" alt="Buddy System Logo">
+
+  </div>
+</div>
+
 </body>
- 
 </html>

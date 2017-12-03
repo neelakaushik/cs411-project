@@ -5,8 +5,6 @@ from flask import jsonify
 import requests
 import json
 import datetime
-import dateutil.parser 
-import numpy as np 
 from urllib.request import urlopen
 from flaskext.mysql import MySQL
 import flask.ext.login as flask_login
@@ -17,7 +15,8 @@ from pygeocoder import Geocoder
 from geopy import geocoders
 from flask_googlemaps import GoogleMaps
 import pprint
-import operator
+import dateutil.parser 
+import numpy as np 
 
 
 authorization_code = None
@@ -28,15 +27,12 @@ end_long = 0
 DESTINATION = ''
 ride_id = ''
 final_message = ''
-start_lines = []
-mbta_stops = {}	#{stop_name: [stop_lat, stop_lon]}
-
 mysql = MySQL()
 
 app = Flask(__name__)
 app.secret_key = 'super secret string'
 app.config['MYSQL_DATABASE_USER'] = 'root'
-app.config['MYSQL_DATABASE_PASSWORD'] = 'Welcome1'
+app.config['MYSQL_DATABASE_PASSWORD'] = 'welcome1'
 app.config['MYSQL_DATABASE_DB'] = 'crimebuddy'
 app.config['MYSQL_DATABASE_HOST'] = '127.0.0.1'
 mysql.init_app(app)
@@ -54,11 +50,9 @@ with open('config.json') as f:
 MBTA_key = credentials["MBTA_key"]
 client_id = credentials["client_id"]
 client_secret = credentials["client_secret"]
-geocode_key = credentials["geocode_key"]
-
-g = geocoder.GoogleV3(api_key = geocode_key)
 
 
+@flask_login.login_required
 @app.route("/", methods=['GET', 'POST'])
 def main():
 	return render_template('index.html')
@@ -105,31 +99,37 @@ def new_page_function():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-
+	global authorization_code
 	
 
 	if request.method == 'GET':
-		global authorization_code
 
 		authorization_code = request.args.get('code')
 
-		return '''
-			   <form action='login' method='POST'>
-				<input type='text' name='email' id='email' placeholder='email'></input>
-				<input type='password' name='password' id='password' placeholder='password'></input>
-				<input type='submit' name='submit'></input>
-			   </form></br>
-		   <a href='/'>Home</a><br>
-		   <a href='/register'>Create an Account</a>
-			   '''
+		return render_template('login.html')
 	#The request method is POST (page is recieving data)
 	email = request.form['email']
 	cursor = conn.cursor()
 	#check if email is registered
+	headers = {'Content-Type': 'application/json'}
+	data = '{"grant_type": "authorization_code", "code": "' + authorization_code + '"}'
+	authorization = requests.post('https://api.lyft.com/oauth/token', headers=headers, data=data, auth=HTTPBasicAuth(client_id, client_secret))
+	token_info = json.loads(authorization.text)
+	token_type = token_info["token_type"]
+	access_token = token_info["access_token"]
+	headers = {'Authorization': token_type + ' ' + access_token}
+	lyft_request = requests.get('https://api.lyft.com/v1/profile', headers=headers)
+	profile = json.loads(lyft_request.text)
+
+	lyft_unique_id = profile['id']
+	
 	if cursor.execute("SELECT password FROM Users WHERE email = '{0}'".format(email)):
 		data = cursor.fetchall()
 		pwd = str(data[0][0] )
-		if request.form['password'] == pwd:
+		uid = getUserIdFromEmail(email)
+		cursor.execute("SELECT lyft_id FROM Lyft WHERE user_id = '{0}'".format(uid))
+		user_lyft_id = cursor.fetchall()
+		if request.form['password'] == pwd and lyft_unique_id == user_lyft_id[0][0]:
 			user = User()
 			user.id = email
 			flask_login.login_user(user) #okay login in user
@@ -144,7 +144,7 @@ def logout():
 	global authorization_code
 	flask_login.logout_user()
 	authorization_code = None
-	return render_template('hello.html', message='Logged out') 
+	return render_template('index.html', message='Logged out') 
 
 @login_manager.unauthorized_handler
 def unauthorized_handler():
@@ -170,9 +170,16 @@ def register_user():
 		password=request.form.get('password')
 		first_name=request.form.get('first_name')
 		last_name=request.form.get('last_name')
-		dob=request.form.get('dob')
+		dob_month=request.form.get('dob-month')
+		dob_day = request.form.get('dob-day')
+		dob_year = request.form.get('dob-year')
 		gender=request.form.get('gender')
-		address=request.form.get('address')
+		street=request.form.get('street')
+		city = request.form.get('city')
+		state = request.form.get('state')
+		zipcode = request.form.get('zipcode')
+		dob = dob_year + '-' + dob_month + '-' + dob_day
+		address = street+', '+city+', '+state+', '+zipcode
 	except:
 		print("couldn't find all tokens") #this prints to shell, end users will not see this (all print statements go to shell)
 		return flask.redirect(flask.url_for('register'))
@@ -219,7 +226,7 @@ def register_user():
 		for ride in rides["ride_history"]:
 			if ride['status'] == 'droppedOff':
 				print("Date/Time of Trip: " + str(ride['dropoff']['time']) + " , Dropped off at: " + str(ride['dropoff']['address']) + " (Distance: " + str(ride['distance_miles']) + " miles)")
-		return render_template('search.html', message='Account Created!')
+		return render_template('main.html', message = success(), create_message='Account Created!')
 	else:
 		print("couldn't find all tokens")
 		return flask.redirect(flask.url_for('register'))
@@ -245,23 +252,19 @@ def isEmailUnique(email):
 		return True
 
 
-@app.route('/search')
+@app.route('/main')
 @flask_login.login_required
 def protected():
-	return render_template('search.html', name=flask_login.current_user.id, message="Search your location")
+	return render_template('main.html', name=flask_login.current_user.id, message=success())
 
 
 
 
-
-
-@app.route("/results", methods=['GET', 'POST'])
-@flask_login.login_required
 def success():
 	global final_message
 	if request.method == 'GET':
-		return render_template("results.html", message=final_message)
-	else:
+	# 	return render_template("results.html", message=final_message)
+	# else:
 		uid = getUserIdFromEmail(flask_login.current_user.id)
 		cursor = conn.cursor()
 		now = datetime.datetime.now()
@@ -369,7 +372,7 @@ def success():
 		final_message = message + message_2
 		cursor.execute("INSERT INTO Favorites (user_id, location, type, access_date) VALUES ('{0}', '{1}', '{2}', '{3}')".format(uid,db_location,db_type, date))
 		conn.commit()
-		return render_template("results.html", message=final_message)
+		return final_message
 
 
 
@@ -377,8 +380,6 @@ def success():
 
 def get_mbta_api(parameters):
 	''' returns a message to display on the next page '''
-	global mbta_stops
-	global start_lines
 	message = []
 	#gets stops closest to current location
 	stops_url= "http://realtime.mbta.com/developer/api/v2/stopsbylocation"
@@ -393,11 +394,6 @@ def get_mbta_api(parameters):
 		if distance >= 0.5:
 			continue
 		stop_id = obj['stop_id']
-
-		stop_lat = obj['stop_lat']
-		stop_lon = obj['stop_lon']
-		mbta_stops[stop] = [stop_lat, stop_lon]
-
 		message.append(stop + " is " + str(distance) + " miles away from you\n")
 
 		# get lines that pass through each stop
@@ -406,97 +402,31 @@ def get_mbta_api(parameters):
 		response_routes = requests.get(routes_url, params=route_params)
 		response_routes = response_routes.json()
 
-		if 'mode' in response_routes:
-			# name = Bus, Subway, or Commuter Rail
-			for mode in response_routes['mode']:
-				name = mode['mode_name']
-				message.append("\t" + name + " line(s) available:\n")
-				
-				# get line names (route) for each mode of transit
-				for route in mode['route']:
-					mbta_stops[stop].append(route['route_name'])
+		# name = Bus, Subway, or Commuter Rail
+		for mode in response_routes['mode']:
+			name = mode['mode_name']
+			message.append("\t" + name + " line(s) available:\n")
+			
+			# get line names (route) for each mode of transit
+			for route in mode['route']:
+				temp_route = "\t\t" + route['route_name']
 
-					if route['route_name'] not in start_lines:
-						start_lines.append(route['route_name'])
-
-					temp_route = "\t\t" + route['route_name']
-
-					time_info = str(route['direction'])
-					nxt = time_info.find("'pre_away'")	# pre_away = ETA prediction in second, get index value
-					after = (time_info[nxt:]).find(",") + nxt  # gets index value of where next parameter starts
-					try:
-						next_arr = time_info[nxt+13:after-1]	# index string to get only ETA value (excluding quotes and commas)
-						next_arr = str([int(s) for s in next_arr.split() if s.isdigit()])	# just in case there were some characters left that are not digits
-						next_arr = next_arr.strip('[') 	# get rid of brackets and convert ETA to float				
-						next_arr = float(next_arr.strip(']'))
-						next_arr = round(next_arr/60, 2)	# converts ETA in seconds to ETA in minutes
-						message.append(temp_route + " - ETA " + str(next_arr) + " minutes")
-					except:
-						message.append(temp_route + " - ETA information unavailable")
+				time_info = str(route['direction'])
+				nxt = time_info.find("'pre_away'")	# pre_away = ETA prediction in second, get index value
+				after = (time_info[nxt:]).find(",") + nxt  # gets index value of where next parameter starts
+				try:
+					next_arr = time_info[nxt+13:after-1]	# index string to get only ETA value (excluding quotes and commas)
+					next_arr = str([int(s) for s in next_arr.split() if s.isdigit()])	# just in case there were some characters left that are not digits
+					next_arr = next_arr.strip('[') 	# get rid of brackets and convert ETA to float				
+					next_arr = float(next_arr.strip(']'))
+					next_arr = round(next_arr/60, 2)	# converts ETA in seconds to ETA in minutes
+					message.append(temp_route + " - ETA " + str(next_arr) + " minutes")
+				except:
+					message.append(temp_route + " - ETA information unavailable")
 
 	return (message)
 
-def get_destination():
-	global start_lines
-	# get address from form 
-	# address = request.form.get('loc')
-	address = '5 Gardner Terrace, Allston, MA'	# for testing purposes
-	location = g.geocode(address)
 
-	dest_lat = location.latitude
-	dest_lon = location.longitude
-	parameters = {"api_key": MBTA_key, "lat":dest_lat, "lon":dest_lon, "format":"json"}
-
-	#gets stops closest to current location
-	stops_url= "http://realtime.mbta.com/developer/api/v2/stopsbylocation"
-	response = requests.get(stops_url, params=parameters)
-	response = response.json()
-
-	dest_stops = {} 	#{stop_name: [distance from destination, stop_lat, stop_lon, line names in common with starting location]}
-
-	for obj in response['stop']:
-		stop = obj['stop_name']
-
-		distance = round(float(obj['distance']), 2)
-
-		# only choose stops within half a mile
-		if distance >= 0.5:
-			continue
-		stop_id = obj['stop_id']
-
-		stop_lat = obj['stop_lat']
-		stop_lon = obj['stop_lon']
-
-		# get lines that pass through each stop
-		route_params = {"api_key": MBTA_key, "stop": stop_id, "format":"json"}
-		routes_url = "http://realtime.mbta.com/developer/api/v2/routesbystop"
-		response_routes = requests.get(routes_url, params=route_params)
-		response_routes = response_routes.json()
-
-		stop_lines = []
-
-		if 'mode' in response_routes:
-			for mode in response_routes['mode']:		
-				# get line names (route) for each mode of transit
-				for route in mode['route']:
-					stop_lines.append(route['route_name'])
-
-		# get lines that only pass through starting stops too
-		compare = [x for x in stop_lines if x in start_lines]
-		if len(compare) == 0:
-			continue
-		else:	# only create a key in dest_stops if the stop has lines in common with starting stops
-			dest_stops[stop] = [distance, stop_lat, stop_lon] + compare
-
-	#sort dictionary keys by the distance value
-	sorted_stops = sorted(dest_stops.items(), key=operator.itemgetter(1))
-	if len(sorted_stops) <= 3:
-		top_stops = sorted_stops
-	else:
-		top_stops = sorted_stops[0:4]
-
-	return (top_stops)	# top_stops = {'stop name': [distance, str(lat), str(lon), lines in common with starting stops]}
-	
 @app.route("/mbta", methods=['GET','POST'])
 def get_coords():
 	# address = request.form.get('loc')
@@ -516,7 +446,7 @@ def get_coords():
 	return render_template('mbta.html', mbta_info=mbta_info)
 
 
-
+@flask_login.login_required
 @app.route("/Lyftsummary", methods=['GET', 'POST'])
 def Lyftsummary():
 	## Lyft API : Connect on home page to Lyft account - yes/ guest
@@ -543,6 +473,9 @@ def Lyftsummary():
 		destination = destination.replace(' ', '+')
 		response = requests.get('https://maps.googleapis.com/maps/api/geocode/json?address=' + destination)
 		resp_json_payload = response.json()
+		if (resp_json_payload['results'] == []):
+			final_info = None
+			return render_template("Lyftsummary.html", message="There was an error processing your address, please enter it again", data=final_info)
 		destination = resp_json_payload['results'][0]['geometry']['location']
 		end_lat = destination['lat']
 		end_long = destination['lng']
@@ -564,6 +497,9 @@ def Lyftsummary():
 		print( "These are your options with Ride Type and ETA based on your current location:")
 		ride_type = []
 		for ride in list_of_rides['eta_estimates']:
+			if (ride["display_name"] == None or ride["eta_seconds"] == None):
+				final_info = None
+				return render_template("Lyftsummary.html", message="There was an error processing your ride request, please enter your address again", data=final_info)
 			ride_type += [ride["display_name"] + ": ETA: " + str(ride["eta_seconds"]/60) + " minutes"]
 			print("\t" + ride["display_name"] + ": ETA: " + str(ride["eta_seconds"]/60) + " minutes")
 		
@@ -585,7 +521,7 @@ def Lyftsummary():
 		# Handle Redirect / Get Authorization Code
 		return render_template("Lyftsummary.html", message="Search a different destination, or call a Lyft using the link below", data=final_info)
 
-
+@flask_login.login_required
 @app.route("/RequestLyft", methods=['GET', 'POST'])
 def RequestLyft():
 	global authorization_code, latitude, longitude, end_lat, end_long, DESTINATION, ride_id
@@ -660,6 +596,7 @@ def lyfttemp():
 	print(authorization_code)
 	return render_template('register.html')
 
+@flask_login.login_required
 @app.route("/profile", methods=['GET', 'POST'])
 def profile():
 	if flask_login.current_user.is_anonymous:
