@@ -36,7 +36,7 @@ mysql = MySQL()
 app = Flask(__name__)
 app.secret_key = 'super secret string'
 app.config['MYSQL_DATABASE_USER'] = 'root'
-app.config['MYSQL_DATABASE_PASSWORD'] = 'welcome1'
+app.config['MYSQL_DATABASE_PASSWORD'] = 'hamburger1'
 app.config['MYSQL_DATABASE_DB'] = 'crimebuddy'
 app.config['MYSQL_DATABASE_HOST'] = '127.0.0.1'
 mysql.init_app(app)
@@ -360,17 +360,17 @@ def success():
 			if i == len(levels)-1:
 				danger_val = 5
 		
-		message = 'The crime data from the last' + length_type + ' shows that your current location\'s danger level has been deemed '
+		message = 'The crime data from the last' + length_type + ' shows that your current location is most likely to be '
 		if danger_val == 1:
-			message += 'low.'
+			message += 'very safe.'
 		if danger_val == 2:
-			message += 'moderate.'
+			message += 'safe.'
 		if danger_val == 3:
-			message += 'considerable.'
+			message += 'moderately safe.'
 		if danger_val == 4:
-			message += 'high.'
+			message += 'dangerous. Please consider taking public transportation or calling a Lyft to your destination'
 		if danger_val == 5:
-			message += 'extreme.'
+			message += 'very dangerous. Please strongly consider taking public transportation or calling a Lyft to your destination.'
 		if shooting == True:
 			message += '\nPlease be cautious. A shooting has been reported in this area within the last' + length_type + '.'
 		message += '\nRadius around location: '+ str(radius) + ' miles'
@@ -395,6 +395,7 @@ def get_mbta_api(parameters):
 	response = requests.get(stops_url, params=parameters)
 	response = response.json()
 
+	count = 0
 	for obj in response['stop']:
 		stop = obj['stop_name']
 		distance = round(float(obj['distance']), 2)
@@ -406,6 +407,10 @@ def get_mbta_api(parameters):
 
 		stop_lat = obj['stop_lat']
 		stop_lon = obj['stop_lon']
+
+		count += 1
+		if count > 5: 
+			break
 		mbta_stops[stop] = [stop_lat, stop_lon]
 
 		message.append(stop + " is " + str(distance) + " miles away from you\n")
@@ -439,8 +444,12 @@ def get_mbta_api(parameters):
 						next_arr = str([int(s) for s in next_arr.split() if s.isdigit()])	# just in case there were some characters left that are not digits
 						next_arr = next_arr.strip('[') 	# get rid of brackets and convert ETA to float				
 						next_arr = float(next_arr.strip(']'))
-						next_arr = round(next_arr/60, 2)	# converts ETA in seconds to ETA in minutes
-						message.append(temp_route + " - ETA " + str(next_arr) + " minutes")
+						mins = int(next_arr // 60)
+						leftover = int(next_arr - (mins * 60))
+						if mins > 0:
+							message.append(temp_route + " - ETA " + str(mins) + " minutes and " + str(leftover) + " seconds")
+						if mins == 0:
+							message.append(temp_route + " - ETA " + str(leftover) + " seconds")
 					except:
 						message.append(temp_route + " - ETA information unavailable")
 
