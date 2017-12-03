@@ -17,6 +17,7 @@ from flask_googlemaps import GoogleMaps
 import pprint
 import dateutil.parser 
 import numpy as np 
+import operator
 
 
 authorization_code = None
@@ -27,6 +28,9 @@ end_long = 0
 DESTINATION = ''
 ride_id = ''
 final_message = ''
+start_lines = []
+mbta_stops = {}		#{stop_name : [stop_lat, stop_lon]}
+
 mysql = MySQL()
 
 app = Flask(__name__)
@@ -50,6 +54,9 @@ with open('config.json') as f:
 MBTA_key = credentials["MBTA_key"]
 client_id = credentials["client_id"]
 client_secret = credentials["client_secret"]
+geocode_key = credentials["geocode_key"]
+
+g = geocoders.GoogleV3(api_key = geocode_key)
 
 
 @flask_login.login_required
@@ -380,6 +387,8 @@ def success():
 
 def get_mbta_api(parameters):
 	''' returns a message to display on the next page '''
+	global mbta_stops
+	global start_lines
 	message = []
 	#gets stops closest to current location
 	stops_url= "http://realtime.mbta.com/developer/api/v2/stopsbylocation"
@@ -394,6 +403,11 @@ def get_mbta_api(parameters):
 		if distance >= 0.5:
 			continue
 		stop_id = obj['stop_id']
+
+		stop_lat = obj['stop_lat']
+		stop_lon = obj['stop_lon']
+		mbta_stops[stop] = [stop_lat, stop_lon]
+
 		message.append(stop + " is " + str(distance) + " miles away from you\n")
 
 		# get lines that pass through each stop
@@ -402,30 +416,96 @@ def get_mbta_api(parameters):
 		response_routes = requests.get(routes_url, params=route_params)
 		response_routes = response_routes.json()
 
-		# name = Bus, Subway, or Commuter Rail
-		for mode in response_routes['mode']:
-			name = mode['mode_name']
-			message.append("\t" + name + " line(s) available:\n")
-			
-			# get line names (route) for each mode of transit
-			for route in mode['route']:
-				temp_route = "\t\t" + route['route_name']
+		if 'mode' in response_routes:
+			# name = Bus, Subway, or Commuter Rail
+			for mode in response_routes['mode']:
+				name = mode['mode_name']
+				message.append("\t" + name + " line(s) available:\n")
+				
+				# get line names (route) for each mode of transit
+				for route in mode['route']:
+					mbta_stops[stop].append(route['route_name'])
 
-				time_info = str(route['direction'])
-				nxt = time_info.find("'pre_away'")	# pre_away = ETA prediction in second, get index value
-				after = (time_info[nxt:]).find(",") + nxt  # gets index value of where next parameter starts
-				try:
-					next_arr = time_info[nxt+13:after-1]	# index string to get only ETA value (excluding quotes and commas)
-					next_arr = str([int(s) for s in next_arr.split() if s.isdigit()])	# just in case there were some characters left that are not digits
-					next_arr = next_arr.strip('[') 	# get rid of brackets and convert ETA to float				
-					next_arr = float(next_arr.strip(']'))
-					next_arr = round(next_arr/60, 2)	# converts ETA in seconds to ETA in minutes
-					message.append(temp_route + " - ETA " + str(next_arr) + " minutes")
-				except:
-					message.append(temp_route + " - ETA information unavailable")
+					if route['route_name'] not in start_lines:
+						start_lines.append(route['route_name'])
+
+					temp_route = "\t\t" + route['route_name']
+
+					time_info = str(route['direction'])
+					nxt = time_info.find("'pre_away'")	# pre_away = ETA prediction in second, get index value
+					after = (time_info[nxt:]).find(",") + nxt  # gets index value of where next parameter starts
+					try:
+						next_arr = time_info[nxt+13:after-1]	# index string to get only ETA value (excluding quotes and commas)
+						next_arr = str([int(s) for s in next_arr.split() if s.isdigit()])	# just in case there were some characters left that are not digits
+						next_arr = next_arr.strip('[') 	# get rid of brackets and convert ETA to float				
+						next_arr = float(next_arr.strip(']'))
+						next_arr = round(next_arr/60, 2)	# converts ETA in seconds to ETA in minutes
+						message.append(temp_route + " - ETA " + str(next_arr) + " minutes")
+					except:
+						message.append(temp_route + " - ETA information unavailable")
 
 	return (message)
 
+def get_destination():
+	global start_lines
+	# get address from form 
+	# address = request.form.get('loc')
+	address = '5 Gardner Terrace, Allston, MA'	# for testing purposes
+	location = g.geocode(address)
+
+	dest_lat = location.latitude
+	dest_lon = location.longitude
+	parameters = {"api_key": MBTA_key, "lat":dest_lat, "lon":dest_lon, "format":"json"}
+
+	#gets stops closest to current location
+	stops_url= "http://realtime.mbta.com/developer/api/v2/stopsbylocation"
+	response = requests.get(stops_url, params=parameters)
+	response = response.json()
+
+	dest_stops = {} 	#{stop_name: [distance from destination, stop_lat, stop_lon, line names in common with starting location]}
+
+	for obj in response['stop']:
+		stop = obj['stop_name']
+
+		distance = round(float(obj['distance']), 2)
+
+		# only choose stops within half a mile
+		if distance >= 0.5:
+			continue
+		stop_id = obj['stop_id']
+
+		stop_lat = obj['stop_lat']
+		stop_lon = obj['stop_lon']
+
+		# get lines that pass through each stop
+		route_params = {"api_key": MBTA_key, "stop": stop_id, "format":"json"}
+		routes_url = "http://realtime.mbta.com/developer/api/v2/routesbystop"
+		response_routes = requests.get(routes_url, params=route_params)
+		response_routes = response_routes.json()
+
+		stop_lines = []
+
+		if 'mode' in response_routes:
+			for mode in response_routes['mode']:		
+				# get line names (route) for each mode of transit
+				for route in mode['route']:
+					stop_lines.append(route['route_name'])
+
+		# get lines that only pass through starting stops too
+		compare = [x for x in stop_lines if x in start_lines]
+		if len(compare) == 0:
+			continue
+		else:	# only create a key in dest_stops if the stop has lines in common with starting stops
+			dest_stops[stop] = [distance, stop_lat, stop_lon] + compare
+
+	#sort dictionary keys by the distance value
+	sorted_stops = sorted(dest_stops.items(), key=operator.itemgetter(1))
+	if len(sorted_stops) <= 3:
+		top_stops = sorted_stops
+	else:
+		top_stops = sorted_stops[0:4]
+
+	return (top_stops)	# top_stops = {'stop name': [distance, str(lat), str(lon), lines in common with starting stops]}
 
 @app.route("/mbta", methods=['GET','POST'])
 def get_coords():
