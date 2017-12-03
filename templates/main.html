@@ -17,15 +17,15 @@
         padding: 0;
       }
     </style>
-    <link rel="stylesheet" href="../static/styles.css">
+    <link rel="stylesheet" href="../static/main-styles.css">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link type="text/css" rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500">
+
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false&libraries=places"></script>
+    <script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA8JL8SGkgJP3Nksz5ZaT3GJ1Wt_igN24w&callback=initMap&v=3.exp&sensor=false&libraries=places"></script>
 
   </head>
-  {% if create_message %}
-  <h4>{{create_message}}</h4>
-  {% endif %}
-
   <body>
 
     <div id="menuButton" onclick="toggleMenu('dropdown-content');">
@@ -36,10 +36,9 @@
 
     <div id="dropdown-content">
       <ul>
-        <li><a href="/profile"><span class="glyphicon glyphicon-user"></span>&emsp;My Profile</a></li>
-        <li><a href="#"><span class="glyphicon glyphicon-cog"></span>&emsp;Edit Settings</a></li>
-        <li><a href="#"><span class="glyphicon glyphicon-heart"></span>&emsp;Favorites</a></li>
-        <li><a href="/logout"><span class="glyphicon glyphicon-off"></span>&emsp;Log Out</a></li>
+        <li><a href="#"><span class="glyphicon glyphicon-user"></span>&emsp;My Profile</a></li>
+        <li><a href="#"><span class="glyphicon glyphicon-heart"></span>&emsp;History</a></li>
+        <li><a href="#"><span class="glyphicon glyphicon-off"></span>&emsp;Log Out</a></li>
       </ul>
     </div>
 
@@ -58,15 +57,34 @@
     <div id="map"></div>
 
     <div id="display">
-        {% if message %}
-        <h4>{{message}}</h4>
-        {% endif %}
-        <br><br><br>
-        <a href="/mbta">Here are your closest MBTA options!</a>
-        <br><br><br>
-        <a href="/Lyftsummary">Check Lyft Information</a>
+
+      {% if message %}
+      <h4>{{message}}</h4>
+      {% endif %}
+
+      <br>
+      <h3>What's your destination?</h3>
+      <input type="text" id="searchTextField">
+      <div style="clear:both;"></div>
+      <input type="button" class="mbta-button" value="See Nearest MBTA Options">
+      <input type="button" class="lyft-button" value="See Lyft Options">
     </div>
-      
+
+
+<!--     <div id="mbta">
+ -->       
+
+    <script>
+
+      function initialize() {
+
+      var input = document.getElementById('searchTextField');
+      var autocomplete = new google.maps.places.Autocomplete(input);
+      }
+      google.maps.event.addDomListener(window, 'load', initialize);
+
+    </script>
+
     <script>
       // Note: This example requires that you consent to location sharing when
       // prompted by your browser. If you see the error "The Geolocation service
@@ -76,7 +94,7 @@
       function initMap() {
         map = new google.maps.Map(document.getElementById('map'), {
           center: {lat: -34.397, lng: 150.644},
-          zoom: 16
+          zoom: 6
         });
         infoWindow = new google.maps.InfoWindow;
 
@@ -109,8 +127,7 @@
         infoWindow.open(map);
       }
     </script>
-    <script async defer
-    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCcSkIs-ILkR6RPpa_dM0SK98JD9ocUbfw&callback=initMap">
-    </script>
+
   </body>
+
 </html>
