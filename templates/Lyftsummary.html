@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+ 
+<a href="/main">Home</a>
+ {% if message %}
+<h4>{{message}}</h4>
+{% endif %}
+<head>
+    <title>Crime Search</title>
+ 
+ 
+</head>
+
+
+
+
+<body>
+	<center>
+		<div>
+			<h1>See the price of a Lyft to your destination, and how close a Lyft is to you!</h1>
+		</div>
+	<div class="Get Lyft Information">
+                <form action="Lyftsummary" method="post">
+			<input type="text" class="searchTerm" placeholder="Enter your destination (Street Address, City, State) " name="destination" style="padding: 0px; margin: 0px; height: 30px; width: 30%;"></input>
+	    		<input type="submit" class="button" value="Get Lyft Information"> </input>
+                </form>
+            <div>
+            <div class="CallLyft">
+                    <form action="RequestLyft?type=lyft_line" method="post">
+			<input type="submit" class="button" value="Call a Lyft Line"> </input>
+		</form>
+		    <form action="RequestLyft?type=lyft" method="post">
+			<input type="submit" class="button" value="Call a Lyft"> </input>
+		</form>
+		    <form action="RequestLyft?type=lyft_plus" method="post">
+			<input type="submit" class="button" value="Call a Lyft Plus"> </input>
+		</form>
+		    <form action="RequestLyft?type=lyft_premier" method="post">
+			<input type="submit" class="button" value="Call a Lyft Premier"> </input>
+		</form>
+		    <form action="RequestLyft?type=lyft_lux" method="post">
+			<input type="submit" class="button" value="Call a Lyft Lux"> </input>
+		</form>
+		    <form action="RequestLyft?type=lyft_luxsuv" method="post">
+			<input type="submit" class="button" value="Call a Lyft Lux SUV"> </input>
+		</form>
+	    <div>
+	</center>
+
+</body>
+
+{% if data %}
+
+	<h4>These are your options with Ride Type and ETA based on your current location:</h4>
+	{% for d in data[0] %}
+	
+	<li>{{d}}</li>
+	{% endfor %}
+	<h4>These are your options with Ride Type, Cost Estimate, Estimated Duration, and Estimated Distance based on your current location and destination:</h4>
+	{% for i in data[1] %}
+	<li>{{i}}</li>
+	{% endfor %}
+
+{% endif %}
