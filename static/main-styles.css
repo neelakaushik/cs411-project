@@ -18,12 +18,16 @@ h1 {
   font-size: 28px;
 }
 
+h2 {
+  margin-left: 30px; 
+}
+
 h3 {
   color: #4c4c4c;
   font-family: 'Roboto', sans-serif;
   font-weight: 400;
   font-size: 15px;
-  margin-left: 110px; 
+  margin-left: 40px; 
   margin-bottom:5px;
 }
 
@@ -35,6 +39,17 @@ h4 {
   margin-bottom:5px;
 }
 
+p {
+  color: #4c4c4c;
+  font-family: 'Roboto', sans-serif;
+  font-weight: 400;
+  margin-left:40px;
+  margin-bottom:5px;
+}
+
+.subpara {
+  margin-left:60px;
+}
 
 .mbta-button{
     background-color: #246703;
@@ -101,14 +116,14 @@ input[type="password"]:focus {
 
 input[type="submit"] {
   margin-top: 28px;
-  width: 120px;
-  height: 32px;
+  width: 150px;
+  height: 25px;
   background: #00A99F;
   border: none;
   border-radius: 2px;
   color: #f3f3f5;
   font-family: 'Roboto', sans-serif;
-  font-weight: 500;
+  font-weight: 300;
   text-transform: uppercase;
   transition: 0.1s ease;
   cursor: pointer;
@@ -128,14 +143,26 @@ input[type="submit"]:active {
   transition: 0.1s ease;
 }
 
+input[type="submit"] {
+  margin-top: 28px;
+  width: 200px;
+  height: 50px;
+/*  background: #00A99F;*/
+  border: none;
+  border-radius: 2px;
+  color: #f3f3f5;
+  font-family: 'Roboto', sans-serif;
+  font-weight: 500;
+  text-transform: uppercase;
+  transition: 0.1s ease;
+  cursor: pointer;
+}
+
 ul {
   list-style-type: none;
   padding: .5em;
   margin: .5em;
 }
-
-
-
 
 #menuButton {
   float:left;
@@ -192,6 +219,26 @@ ul {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
 }
 
+
+#mbta-view {
+  float: left;
+  margin: 10px;
+  width:45%;
+  height: 90%;
+  background: #f1f3f4;
+  border-radius: 2px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+#lyft-view {
+  float: left;
+  margin: 10px;
+  width:45%;
+  height: 90%;
+  background: #f1f3f4;
+  border-radius: 2px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);  
+}
 
 #login-box {
   position: relative;
@@ -252,46 +299,6 @@ ul {
   background-size: cover;
   background-position: center;
   border-radius: 0 2px 2px 0;
-}
-
-#locationField, #controls {
-  position: relative;
-  width: 480px;
-}
-#autocomplete {
-  position: absolute;
-  top: 0px;
-  left: 0px;
-  width: 99%;
-}
-.label {
-  text-align: right;
-  font-weight: bold;
-  width: 100px;
-  color: #303030;
-}
-#address {
-  border: 1px solid #000090;
-  background-color: #f0f0ff;
-  width: 480px;
-  padding-right: 2px;
-}
-#address td {
-  font-size: 10pt;
-}
-.field {
-  width: 99%;
-}
-.slimField {
-  width: 80px;
-}
-.wideField {
-  width: 200px;
-}
-#locationField {
-  height: 20px;
-  margin-bottom: 2px;
-  margin-left: 70px;
 }
 
 }
