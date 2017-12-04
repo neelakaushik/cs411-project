@@ -6,53 +6,53 @@
 </head>
 <body>
 <a href="/main">Home</a>
-<script>
+<!-- <script>
 function editProfile() {  
   if (document.getElementById('edit-profile').style.display == 'none') {
                     document.getElementById('view-profile').style.display = 'none';
                     document.getElementById('edit-profile').style.display = 'block';
                 }
 }
-</script>
+</script> -->
 
 <div id="view-profile">
-  <h1 align="center">Your Profile&emsp;<button id = 'lock' onclick="editProfile();"><i class="fa fa-lock" style="font-size:20x"></i></button></h1>
+  <h1 align="center">Your Profile&emsp;</h1>
 
   <br> 
 
   <h3>First Name</h3>
-  <input type="first-name-view" id="first_name" value="Neela" / readonly>
+  <input type="first-name-view" id="first_name" value= {{data[1]}} / readonly>
 
   <h3>Last Name</h3>
-  <input type="last-name-view" id="last_name" value="Kaushik" / readonly>
+  <input type="last-name-view" id="last_name" value={{data[2]}} / readonly>
 
-  <h3>Username</h3>
-  <input type="username-view" id="username" value= data[0][0] / readonly>
+  <h3>Email</h3>
+  <input type="username-view" id="username" value= {{data[0]}} / readonly>
 
   <h3>Gender</h3>
-  <input type="gender-view" id="username" value="Female" / readonly>
+  <input type="gender-view" id="username" value={{data[3]}} / readonly>
 
   <h3>Date of Birth</h3>
-  <input type="dob-month-view" id="username" value="July" / readonly>
-  <input type="dob-day-view" id="username" value="14" / readonly>
-  <input type="dob-year-view" id="username" value="1996" / readonly>
+  <input type="dob-month-view" id="username" value={{data[4]}} / readonly>
+  <input type="dob-day-view" id="username" value= {{data[5]}} / readonly>
+  <input type="dob-year-view" id="username" value={{data[6]}} / readonly>
 
   <div style="clear:both;"></div>
 
   <h3>Home Address</h3>
 
-  <input type="street-view" id="street" value="15 Winslow Rd." / readonly>
+  <input type="street-view" id="street" value={{data[7]}} / readonly>
 
-  <input type="city-view" id="city" value="Belmont" / readonly>
+  <input type="city-view" id="city" value={{data[8]}} / readonly>
 
-  <input type=state-view id="state" value="MA" / readonly>
+  <input type=state-view id="state" value={{data[9]}} / readonly>
 
-  <input type="zipcode-view" id="zipcode" value="02478" / readonly>
+  <input type="zipcode-view" id="zipcode" value={{data[10]}} / readonly>
 
 </div>
 
 
-<div id="edit-profile" style="display: none">
+<!-- <div id="edit-profile" style="display: none">
   
   <h1 align="center">Your Profile&emsp;<span id = 'lock' class="fa fa-unlock-alt" style="font-size:20x"></span></h1>
 
@@ -275,7 +275,7 @@ function editProfile() {
     <input type="submit" id="signup_submit" value="Save changes" />
   </form>
 
-</div>
+</div> -->
 
 
 </body>

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+ 
+<a href="/main">Home</a>
+<head>
+    <title>Buddy System</title>
+
+
+</head>     
+<body>
+    <center>
+        <div class = "vertical-center">
+            <div id="container">
+                <div id="fixedheader" style="margin-top: 100px;padding:0;"> <font size="+6"; face="Wild West">This is your history </font> <div> 
+            <div>
+
+            <h2> Your past 5 searches </h2>
+
+
+        	{% for your_list_element in history %}
+            	<p>{{ your_list_element }} </p>
+         	{% endfor %}
+         <div>
+</div>
+</body>
+</html>
