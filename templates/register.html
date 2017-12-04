@@ -4,9 +4,7 @@
   <link rel="stylesheet" href="../static/registration-styles.css">
 </head>
 <body>
-{% if message %}
-  <h4>{{message}}</h4>
-  {% endif %}
+
 <div id="registration-box">
   
   <h1 align="center">Almost done!</h1>
@@ -27,7 +25,6 @@
 
     <label for="password"></label>
     <input type="password" name="password" placeholder="Password" /> 
-
 
     <h3>Gender</h3>
     <label for="gender"></label>
@@ -229,7 +226,11 @@
     <label for="zipcode"></label>
     <input type="zipcode" name="zipcode" placeholder="ZIP" />
 
-    <input type='text' name='location' id='location' placeholder='current location' /> 
+    <label for="location"></label>
+    <input type='location' name='location' placeholder='Current Location' /> 
+    {% if message %}
+    <p style="margin-left:110px;color:red;font-size:12px">{{message}}</p>
+    {% endif %}
     <input type="submit" id="signup_submit" value="Sign me up" />
   </form>
 

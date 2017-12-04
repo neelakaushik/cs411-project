@@ -23,7 +23,7 @@
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
     <script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false&libraries=places"></script>
-    <script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA8JL8SGkgJP3Nksz5ZaT3GJ1Wt_igN24w&callback=initMap&v=3.exp&sensor=false&libraries=places"></script>
+    <script defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA8JL8SGkgJP3Nksz5ZaT3GJ1Wt_igN24w&callback=initMap&v=3.exp&sensor=false&libraries=places"></script>
 
   </head>
 
@@ -58,14 +58,14 @@
 
     <div id="map"></div>
     
+    
     <div id="mbta-view">
-
-      <h2 style="margin-bottom:15px"> MBTA Results </h2>
+      <h2 style="margin-bottom:15px;margin-top:40px;margin-left:230px"> MBTA Results </h2>
       {% for your_list_element in mbta_info %}
             {% if 'miles' in your_list_element %}
-                <p style="margin-left:35px;margin-top:30px"><a href="http://www.google.com">{{ your_list_element }}</a> </p>
+                <li style="margin-left:35px;margin-top:30px"><a href="http://www.google.com">{{ your_list_element }}</a> </li>
             {% else %}
-                <p style="margin-left:60px;margin-bottom:10px">{{ your_list_element }} </p>
+                <p style="font-size:14;margin-left:60px;margin-bottom:10px">{{ your_list_element }} </p>
             {% endif %}
 
       {% endfor %}
