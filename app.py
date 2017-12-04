@@ -49,7 +49,7 @@ app = Flask(__name__)
 app.secret_key = 'super secret string'
 app.config['MYSQL_DATABASE_USER'] = 'root'
 app.config['MYSQL_DATABASE_PASSWORD'] = 'welcome1'
-app.config['MYSQL_DATABASE_DB'] = 'test2'
+app.config['MYSQL_DATABASE_DB'] = 'test3'
 app.config['MYSQL_DATABASE_HOST'] = '127.0.0.1'
 mysql.init_app(app)
 
