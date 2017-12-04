@@ -4,7 +4,9 @@
   <link rel="stylesheet" href="../static/registration-styles.css">
 </head>
 <body>
-
+{% if message %}
+  <h4>{{message}}</h4>
+  {% endif %}
 <div id="registration-box">
   
   <h1 align="center">Almost done!</h1>

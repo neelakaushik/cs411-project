@@ -34,6 +34,7 @@ final_message = ''
 start_lines = []
 mbta_stops = {}		#{stop_name : [stop_lat, stop_lon]}
 address = ''
+register_message = None
 
 
 
@@ -159,7 +160,10 @@ def login():
 		return render_template('login.html')
 	#The request method is POST (page is recieving data)
 	address = request.form['location']
-	print(address)
+	try:
+		location = g.geocode(address)
+	except:
+		return render_template('register.html', message="Please enter a valid address for your location!")
 	email = request.form['email']
 	cursor = conn.cursor()
 
@@ -199,14 +203,19 @@ def lyftregister():
 
 @app.route("/register", methods=['GET'])
 def register():
-	return render_template('register.html', supress='True')  
+	return render_template('register.html', message=register_message, supress='True')  
 
 @app.route("/register", methods=['POST'])
 def register_user():
 	global authorization_code
 	global address
+	global register_message
 
 	address = request.form['location']
+	try:
+		location = g.geocode(address)
+	except:
+		return render_template('register.html', message="Please enter a valid address for your location!")
 	try:
 		email=request.form.get('email')
 		password=request.form.get('password')
@@ -224,6 +233,7 @@ def register_user():
 		address = street+', '+city+', '+state+', '+zipcode
 	except:
 		print("couldn't find all tokens") #this prints to shell, end users will not see this (all print statements go to shell)
+		register_message = "Something went wrong! Please try again!"
 		return flask.redirect(flask.url_for('register'))
 	cursor = conn.cursor()
 
@@ -273,6 +283,7 @@ def register_user():
 		return render_template('main.html', message = success(), create_message='Account Created!')
 	else:
 		print("couldn't find all tokens")
+		register_message = "Something went wrong! Please try again!"
 		return flask.redirect(flask.url_for('register'))
 
 

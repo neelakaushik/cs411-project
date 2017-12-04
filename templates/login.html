@@ -5,7 +5,9 @@
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 <body>
-
+{% if message %}
+  <h4>{{message}}</h4>
+  {% endif %}
 <div id="login-box">
   <div class="left">
     <h1>Log in</h1>
