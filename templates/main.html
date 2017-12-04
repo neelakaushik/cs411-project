@@ -60,35 +60,39 @@
     <div id="display">
 
       {% if message %}
-      <h4>{{message}}</h4>
+      <h4 style="padding: 10%">{{message}}</h4>
       {% endif %}
 
       <div style="clear:both;"></div>
 
-      <h3>What's your destination?</h3>
-      <form id="DestinationForm" method="post" action="/Main">
-      <label for="destination"></label>
-      <input type="text" id="destination" name="destination" size=55 style="float:left;height:30px;margin-left: 40px;margin-left:40px;margin-top: 29px">
-      <input type="submit" id="destination-submit" style="float:left;margin-left:30px;width:40px; height:30px" value="Go" />
+      <h3 style="margin-left:70px">What's your destination?</h3>
+      <form id="DestinationForm" method="post" action="mbta">
+        <label for="destination"></label>
+        <input type="text" id="destination" name="destination" size=55 style="float:left;height:30px;margin-left:70px;margin-top: 30px;margin-bottom:20px">
+        <input type="submit" style="float:left;margin-left:70px;background:#246703" value="See MBTA Options" />
+        <input type="submit" formaction="Lyftsummary" style="float:left;margin-left:40px;background:#ff00bf" value="See Lyft Options" />
+        <div style="clear:both;"></div>
+        {% if destination_message %}
+          <p style="margin-top:40px;margin-left:70px;color:red;font-size:16px">{{destination_message}}</p>
+        {% endif %}
       </form>
-
-<!--       <form id="DestinationForm" method="post" action="mbta">
-      <label for="destination"></label>
-      <input type="text" id="destination" name="destination" size=55 style="float:left;height:30px;margin-left: 40px;margin-left:40px;margin-top: 29px">
-      <input type="submit" id="destination-submit" style="float:left;margin-left:30px;width:40px; height:30px" value="Go" />
-  <input type="submit" style="float:left;margin-left:40px;background:#246703" value="See MBTA Options" />
-      <input type="submit" formaction="Lyftsummary" style="float:left;margin-left:40px;background:#ff00bf" value="See Lyft Options" />
-
+<!-- 
+      <form id="DestinationForm" method="post" action="mbta">
+        <label for="destination"></label>
+        <input type="text" id="destination" name="destination" size=55 style="float:left;height:30px;margin-left: 40px;margin-left:40px;margin-top: 29px">
+        
+        <input type="submit" id="destination-submit" style="float:left;margin-left:30px;width:40px; height:30px" value="Go" />
+        <input type="submit" style="float:left;margin-left:40px;background:#246703" value="See MBTA Options" />
       </form> -->
 
-      <div style="clear:both;"></div>
+<!--       <div style="clear:both;"></div>
       <br><br><br>
       <form action = "mbta" method="post">
-        <input type="submit" style="float:left;margin-left:40px;background:#246703" value="See MBTA Options" />
+        <input type="submit" style="float:left;margin-left:70px;background:#246703" value="See MBTA Options" />
       </form>
       <form action = "Lyftsummary" method="get">
         <input type="submit" style="float:left;margin-left:40px;background:#ff00bf" value="See Lyft Options" />
-      </form>
+      </form> -->
 
       <div style="clear:both;"></div>
 
