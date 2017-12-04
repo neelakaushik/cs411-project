@@ -1,0 +1,81 @@
+@import url(https://fonts.googleapis.com/css?family=Roboto:400,300,500);
+*:focus {
+  outline: none;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: #DDD;
+  font-size: 16px;
+  color: fuchsia;
+  font-family: 'Roboto', sans-serif;
+  font-weight: 300;
+}
+
+h1 {
+  margin: 20px 0 0 0;
+  font-weight: 500;
+  font-size: 28px;
+}
+
+h2 {
+  margin: 10px 0 0 0;
+  font-weight: 250;
+  font-size: 20px;
+}
+
+h3 {
+  color: #4c4c4c;
+  font-family: 'Roboto', sans-serif;
+  font-weight: 400;
+  font-size: 15px;
+  margin-left: 110px;
+  margin-bottom:5px;
+}
+
+
+select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAAJCAYAAAA/33wPAAAAvklEQVQoFY2QMQqEMBBFv7ERa/EMXkGw11K8QbDXzuN4BHv7QO6ifUgj7v4UAdlVM8Uwf+b9YZJISnlqrfEUZVlinucnBGKaJgghbiHOyLyFKIoCbdvecpyReYvo/Ma2bajrGtbaC58kCdZ1RZ7nl/4/4d5EsO/7nzl7IUtodBexMMagaRrs+06JLMvcNWmaOv2W/C/TMAyD58dxROgSmvxFFMdxoOs6lliWBXEcuzokXRbRoJRyvqqqQvye+QDMDz1D6yuj9wAAAABJRU5ErkJggg==) 100% no-repeat;
+  line-height: 1;
+  box-sizing: border-box;
+  border-color: #4c4c4c;
+  font-family: 'Roboto', sans-serif;
+  color: #7a7a7a;
+  margin-left: 110px;
+  padding: 4px;
+  width: 120px;
+  height: 32px;
+}
+
+
+
+
+input[type="history"],
+ {
+  display: block;
+  box-sizing: border-box;
+  margin-left: 110px;
+  margin-bottom: 20px;
+  padding: 4px;
+  width: 400px;
+  height: 32px;
+  border: 1px solid #4c4c4c;
+  font-family: 'Roboto', sans-serif;
+  font-weight: 400;
+  transition: 0.2s ease;
+  background-color: #f3f3f5
+}
+
+
+
+
+input[type="history"]:focus,  {
+  border: 2px solid #00A99F;
+  transition: 0.2s ease;
+}
+
+
+

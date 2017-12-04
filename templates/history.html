@@ -4,11 +4,23 @@
 <a href="/main">Home</a>
 <head>
     <title>Buddy System</title>
-
+  <link rel="stylesheet" href="../static/history-styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 
 </head>     
 <body>
-    <center>
+
+    <div id="view-profile">
+        <h1 align="center">This is your history&emsp;</h1>
+    <br> 
+        {% for your_list_element in history %}
+        <input style="width:320px;height:40px;margin-left: 455px" type="history-view" id="history" value= {{your_list_element}} / readonly>
+        <br>
+        <br>
+        {% endfor %}
+
+    </div>
+    <!-- <center>
         <div class = "vertical-center">
             <div id="container">
                 <div id="fixedheader" style="margin-top: 100px;padding:0;"> <font size="+6"; face="Wild West">This is your history </font> <div> 
@@ -17,10 +29,8 @@
             <h2> Your past 5 searches </h2>
 
 
-        	{% for your_list_element in history %}
-            	<p>{{ your_list_element }} </p>
-         	{% endfor %}
+        	
          <div>
-</div>
+</div> -->
 </body>
 </html>

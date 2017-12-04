@@ -35,6 +35,7 @@ start_lines = []
 mbta_stops = {}		#{stop_name : [stop_lat, stop_lon]}
 address = ''
 register_message = None
+GENERIC_ADDRESS = '725 Commonwealth Ave, Boston, MA'
 
 
 
@@ -163,7 +164,7 @@ def login():
 	try:
 		location = g.geocode(address)
 	except:
-		return render_template('register.html', message="Please enter a valid address for your location!")
+		return render_template('login.html', message="Please enter a valid address for your location!")
 	email = request.form['email']
 	cursor = conn.cursor()
 
@@ -346,6 +347,7 @@ def success():
 	global latitude
 	global longitude
 	global address
+	global GENERIC_ADDRESS
 	if request.method == 'GET':
 	# 	return render_template("results.html", message=final_message)
 	# else:
@@ -353,6 +355,7 @@ def success():
 		cursor = conn.cursor()
 		now = datetime.datetime.now()
 		date = now.strftime("%Y-%m-%d")
+		marker = False
 		# d = datetime.datetime.strptime(date, '%m-%d-%Y')
 		# temp = d.strftime('%Y-%m-%d')
 		#send_url = 'http://freegeoip.net/json'
@@ -360,7 +363,12 @@ def success():
 		#j = json.loads(r.text)
 		#lat = j['latitude']
 		#lon = j['longitude']
-		location = g.geocode(address)
+		try:
+			location = g.geocode(address)
+		except:
+			marker = True
+			location = g.geocode(GENERIC_ADDRESS)
+			
 		latitude = location.latitude
 		longitude = location.longitude
 		db_location = "(" + str(latitude) + str(longitude) + ")"
@@ -459,7 +467,12 @@ def success():
 		final_message = message 
 		cursor.execute("INSERT INTO Favorites (user_id, location, type, access_date) VALUES ('{0}', '{1}', '{2}', '{3}')".format(uid,db_location,db_type, date))
 		conn.commit()
-		return final_message
+		error_statemenet = "There was an error with your address. Re-enter your address to find crime near you."
+		if marker:
+			marker = False
+			return render_template('main.html', message=error_statemenet+final_message)
+		else:
+			return final_message
 
 ########################################################################################
 
@@ -895,7 +908,7 @@ def favorites():
 	uid = getUserIdFromEmail(flask_login.current_user.id)
 	cursor = conn.cursor()
 
-	cursor.execute("SELECT location, access_date FROM Favorites WHERE user_id = '{0}' ORDER BY access_date DESC LIMIT 5".format(uid))
+	cursor.execute("SELECT location, access_date FROM Favorites WHERE user_id = '{0}' ORDER BY access_date DESC LIMIT 10".format(uid))
 	favs = cursor.fetchall()
 	address_list = []
 	date_list = []
@@ -908,8 +921,14 @@ def favorites():
 		return_value = requests.get(api_url)
 		return_value_json = json.loads(return_value.text)
 		address = return_value_json['results'][1]['formatted_address']
-		address_list += [str(i[1]) + ': ' + address]
-		print(address_list)
+		addr_split = address.split()
+		real_addr = ''
+		for j in range(len(addr_split)):
+			if j != len(addr_split) - 1:
+				real_addr += addr_split[j] + '-'
+			else:
+				real_addr += addr_split[j]
+		address_list += [str(i[1]) + ':-' + real_addr]
 	return render_template('history.html', history=address_list, dates=date_list)
 
 ########################################################################################
