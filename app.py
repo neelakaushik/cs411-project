@@ -49,7 +49,7 @@ app = Flask(__name__)
 app.secret_key = 'super secret string'
 app.config['MYSQL_DATABASE_USER'] = 'root'
 app.config['MYSQL_DATABASE_PASSWORD'] = 'welcome1'
-app.config['MYSQL_DATABASE_DB'] = 'crimebuddy'
+app.config['MYSQL_DATABASE_DB'] = 'test5'
 app.config['MYSQL_DATABASE_HOST'] = '127.0.0.1'
 mysql.init_app(app)
 
@@ -175,13 +175,37 @@ def login():
 		pwd = str(data[0][0] )
 		uid = getUserIdFromEmail(email)
 		if request.form['password'] == pwd:
-			user = User()
-			user.id = email
-			flask_login.login_user(user) #okay login in user
-			return flask.redirect(flask.url_for('protected')) #protected is a function defined in this file
+			uid = getUserIdFromEmail(email)
+			try:
+
+				headers = {'Content-Type': 'application/json'}
+				data = '{"grant_type": "authorization_code", "code": "' + authorization_code + '"}'
+				authorization = requests.post('https://api.lyft.com/oauth/token', headers=headers, data=data, auth=HTTPBasicAuth(client_id, client_secret))
+				token_info = json.loads(authorization.text)
+				token_type = token_info["token_type"]
+				access_token = token_info["access_token"]
+
+				headers = {'Authorization': token_type + ' ' + access_token}
+				# User Profile Info
+				lyft_request = requests.get('https://api.lyft.com/v1/profile', headers=headers)
+				print(lyft_request)
+				profile = json.loads(lyft_request.text)
+
+				real_lyft_id = profile['id']
+				cursor.execute("SELECT lyft_id FROM Lyft WHERE user_id = {0}".format(uid))
+				db_lyft_id = cursor.fetchone()
+				print(len(real_lyft_id))
+				print(len(db_lyft_id[0]))
+			except:
+				return render_template('index.html', message="Your Lyft Authentication has timed out! Please reauthenticate!")
+			if str(real_lyft_id) == str(db_lyft_id[0]):
+				user = User()
+				user.id = email
+				flask_login.login_user(user) #okay login in user
+				return flask.redirect(flask.url_for('protected')) #protected is a function defined in this file
 
 	#information did not match
-	return "<a href='/login'>Try again</a>\
+	return "<a href='/'>Try again</a>\
 			</br><a href='/Lyftregister'>or make an account</a>"
 
 @app.route('/logout')
