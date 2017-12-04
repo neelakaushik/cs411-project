@@ -46,7 +46,7 @@ mysql = MySQL()
 app = Flask(__name__)
 app.secret_key = 'super secret string'
 app.config['MYSQL_DATABASE_USER'] = 'root'
-app.config['MYSQL_DATABASE_PASSWORD'] = 'hamburger1'
+app.config['MYSQL_DATABASE_PASSWORD'] = 'welcome1'
 app.config['MYSQL_DATABASE_DB'] = 'crimebuddy'
 app.config['MYSQL_DATABASE_HOST'] = '127.0.0.1'
 mysql.init_app(app)
@@ -542,11 +542,10 @@ def get_mbta_api(parameters):
 		mbta_stops[stop] = [stop_lat, stop_lon]
 
 		directions = get_directions(stop_lat, stop_lon)
+		
 
 		message.append(stop + " is " + str(distance) + " miles away from you\n")
 		message.append(directions)
-
-
 		# get lines that pass through each stop
 		route_params = {"api_key": MBTA_key, "stop": stop_id, "format":"json"}
 		routes_url = "http://realtime.mbta.com/developer/api/v2/predictionsbystop"
@@ -714,9 +713,12 @@ def Lyftsummary():
 		#longitude = -71.06
 
 		# Get lat, long of destination
-		destination = destination_address #request.form.get('destination')
+		destination = request.form.get('destination')
 		DESTINATION = destination
-		destination = destination.replace(' ', '+')
+		if DESTINATION == None:
+			return render_template("Lyftsummary.html", message="There was an error processing your address, please enter it again", data=final_info)
+
+		#destination = destination.replace(' ', '+')
 		response = requests.get('https://maps.googleapis.com/maps/api/geocode/json?address=' + destination)
 		resp_json_payload = response.json()
 		if (resp_json_payload['results'] == []):
@@ -746,7 +748,7 @@ def Lyftsummary():
 			if (ride["display_name"] == None or ride["eta_seconds"] == None):
 				final_info = None
 				return render_template("Lyftsummary.html", message="There was an error processing your ride request, please enter your address again", data=final_info)
-			if ride["display_name"] == "Lyft Line" or ride["display_name"] == "Lyft": 
+			if ride["display_name"] == "Lyft line" or ride["display_name"] == "Lyft": 
 				ride_type += [ride["display_name"] + ": ETA: " + str(ride["eta_seconds"]/60) + " minutes"]
 				print("\t" + ride["display_name"] + ": ETA: " + str(ride["eta_seconds"]/60) + " minutes")
 		
@@ -756,7 +758,7 @@ def Lyftsummary():
 		print( "These are your options with Ride Type, Cost Estimate, Estimated Duration, and Estimated Distance based on your current location and destination:")
 		cost_estimate = []
 		for ride in list_of_rides['cost_estimates']:
-			if ride["display_name"] == "Lyft Line" or ride["display_name"] == "Lyft":
+			if ride["display_name"] == "Lyft line" or ride["display_name"] == "Lyft":
 				cost = ((ride["estimated_cost_cents_min"] + ride["estimated_cost_cents_max"])/2) / 100
 				cost_estimate += [ride["display_name"] + ": Cost Estimate: " + "$" + ("%.2f" % cost) + ": Estimated Duration: " + \
 				str("%.2f" %(ride['estimated_duration_seconds']/ 60)) + " minutes" + " Estimated Distance: " + str(ride['estimated_distance_miles']) + " miles"]
@@ -767,7 +769,7 @@ def Lyftsummary():
 		# Request a Lyft (requires user login - get into user's lyft account)
 		
 		# Handle Redirect / Get Authorization Code
-		return render_template("Lyftsummary.html", message="Search a different destination, or call a Lyft using the link below", data=final_info)
+		return render_template("Lyftsummary.html",  data=final_info)
 
 @flask_login.login_required
 @app.route("/RequestLyft", methods=['GET', 'POST'])
