@@ -36,7 +36,7 @@ mbta_stops = {}		#{stop_name : [stop_lat, stop_lon]}
 address = ''
 register_message = None
 GENERIC_ADDRESS = '725 Commonwealth Ave, Boston, MA'
-destination_address = '540 Commonwealth Avenue, Boston, MA'		#currently hardcoded
+#destination_address = '540 Commonwealth Avenue, Boston, MA'		#currently hardcoded
 
 
 #This section locates the database and creates a connection via password and local host
@@ -502,16 +502,6 @@ def success():
 
 ########################################################################################
 
-@app.route("/Main", methods=['GET', 'POST'])
-def get_global_destination():
-	global destination_address 
-	try:
-		destination_address  = request.form.get('destination')
-	except:
-		destination_address = '540 Commonwealth Avenue, Boston, MA'
-	print ("destination_address: ", destination_address)
-	return render_template('main.html', supress='True')  
-
 def get_directions(stop_lat, stop_lon):
 	global latitude
 	global longitude
@@ -719,6 +709,13 @@ def get_destination_stops():
 def get_coords():
 	global latitude
 	global longitude
+	global destination_address
+
+	destination = request.form.get('destination')
+	if destination == "":
+		return render_template("main.html", destination_message="Please enter a valid address!")
+	else:
+		destination_address = destination
 
 	#send_url = 'http://freegeoip.net/json'
 	#r = requests.get(send_url)
@@ -735,19 +732,6 @@ def get_coords():
 	return render_template('mbta.html', mbta_info=mbta_info)
 
 ########################################################################################
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
