@@ -30,13 +30,14 @@ ride_id = ''
 final_message = ''
 start_lines = []
 mbta_stops = {}		#{stop_name : [stop_lat, stop_lon]}
+address = ''
 
 mysql = MySQL()
 
 app = Flask(__name__)
 app.secret_key = 'super secret string'
 app.config['MYSQL_DATABASE_USER'] = 'root'
-app.config['MYSQL_DATABASE_PASSWORD'] = 'welcome1'
+app.config['MYSQL_DATABASE_PASSWORD'] = 'hamburger1'
 app.config['MYSQL_DATABASE_DB'] = 'crimebuddy'
 app.config['MYSQL_DATABASE_HOST'] = '127.0.0.1'
 mysql.init_app(app)
@@ -107,6 +108,7 @@ def new_page_function():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
 	global authorization_code
+	global address
 	
 
 	if request.method == 'GET':
@@ -115,6 +117,7 @@ def login():
 
 		return render_template('login.html')
 	#The request method is POST (page is recieving data)
+	address = request.form['location']
 	email = request.form['email']
 	cursor = conn.cursor()
 	#check if email is registered
@@ -269,6 +272,9 @@ def protected():
 
 def success():
 	global final_message
+	global latitude
+	global longitude
+	global address
 	if request.method == 'GET':
 	# 	return render_template("results.html", message=final_message)
 	# else:
@@ -278,12 +284,16 @@ def success():
 		date = now.strftime("%Y-%m-%d")
 		# d = datetime.datetime.strptime(date, '%m-%d-%Y')
 		# temp = d.strftime('%Y-%m-%d')
-		send_url = 'http://freegeoip.net/json'
-		r = requests.get(send_url)
-		j = json.loads(r.text)
-		lat = j['latitude']
-		lon = j['longitude']
-		db_location = "(" + str(lat) + str(lon) + ")"
+		#send_url = 'http://freegeoip.net/json'
+		#r = requests.get(send_url)
+		#j = json.loads(r.text)
+		#lat = j['latitude']
+		#lon = j['longitude']
+
+		location = g.geocode(address)
+		latitude = location.latitude
+		longitude = location.longitude
+		db_location = "(" + str(latitude) + str(longitude) + ")"
 		db_type="N/A"
 		# lon = float(location[1])
 		# lat = float(location[0])
@@ -294,7 +304,7 @@ def success():
 		    'cache-control': "no-cache",
 		    'postman-token': "8d06a41f-63f4-8b97-77d4-be22bafc72ca"
 		    }
-		api_string = "/crimes.json?key=privatekeyforspotcrimepublicusers-commercialuse-877.410.1607&lat={0}&lon={1}&radius={2}".format(lat,lon,radius)
+		api_string = "/crimes.json?key=privatekeyforspotcrimepublicusers-commercialuse-877.410.1607&lat={0}&lon={1}&radius={2}".format(latitude,longitude,radius)
 		con.request("GET", api_string, headers=headers)
 
 		res = con.getresponse()
@@ -359,9 +369,11 @@ def success():
 				break
 			if i == len(levels)-1:
 				danger_val = 5
+
+
+		message = 'The crime data from the last' + length_type + ' shows that the area within ' + str(radius) + ' of your current location is most likely to be '
 		
-		message = 'The crime data from the last' + length_type + ' shows that your current location is most likely to be '
-		if danger_val == 1:
+		if danger_val == 1 or danger_val == 0:
 			message += 'very safe.'
 		if danger_val == 2:
 			message += 'safe.'
@@ -373,16 +385,18 @@ def success():
 			message += 'very dangerous. Please strongly consider taking public transportation or calling a Lyft to your destination.'
 		if shooting == True:
 			message += '\nPlease be cautious. A shooting has been reported in this area within the last' + length_type + '.'
-		message += '\nRadius around location: '+ str(radius) + ' miles'
 		
-		message_2 = "\nSee below to call a Lyft and find the closest MBTA stops."
-		final_message = message + message_2
+		final_message = message 
 		cursor.execute("INSERT INTO Favorites (user_id, location, type, access_date) VALUES ('{0}', '{1}', '{2}', '{3}')".format(uid,db_location,db_type, date))
 		conn.commit()
 		return final_message
 
 
-
+@app.route("/Main", methods=['GET', 'POST'])
+def get_global_destination():
+	global destination_address 
+	destination_address  = request.form.get('destination')
+	return render_template('main.html', supress='True')  
 
 
 def get_mbta_api(parameters):
@@ -455,12 +469,14 @@ def get_mbta_api(parameters):
 
 	return (message)
 
-def get_destination():
+def get_destination_stops():
 	global start_lines
+
 	# get address from form 
 	# address = request.form.get('loc')
-	address = '5 Gardner Terrace, Allston, MA'	# for testing purposes
-	location = g.geocode(address)
+	#address = '5 Gardner Terrace, Allston, MA'	# for testing purposes
+	address = destination_address
+	location = g.geocode(destination_address)
 
 	dest_lat = location.latitude
 	dest_lon = location.longitude
@@ -516,19 +532,21 @@ def get_destination():
 
 	return (top_stops)	# top_stops = {'stop name': [distance, str(lat), str(lon), lines in common with starting stops]}
 
+
 @app.route("/mbta", methods=['GET','POST'])
 def get_coords():
-	# address = request.form.get('loc')
-	# location = g.geocode(address, timeout=10)
+	global latitude
+	global longitude
 
-	# lat = location.latitude
-	# lon = location.longitude
+	#send_url = 'http://freegeoip.net/json'
+	#r = requests.get(send_url)
+	#j = json.loads(r.text)
+	#lat = j['latitude']
+	#lon = j['longitude']
 
-	send_url = 'http://freegeoip.net/json'
-	r = requests.get(send_url)
-	j = json.loads(r.text)
-	lat = j['latitude']
-	lon = j['longitude']
+	lat = latitude
+	lon = longitude
+
 	parameters = {"api_key": MBTA_key, "lat":lat, "lon":lon, "format":"json"}
 
 	mbta_info = get_mbta_api(parameters)
@@ -547,17 +565,17 @@ def Lyftsummary():
 	if request.method == 'GET':
 		return render_template("Lyftsummary.html")
 	else:
-		send_url = 'http://freegeoip.net/json'
-		r = requests.get(send_url)
-		j = json.loads(r.text)
-		latitude = j['latitude']
-		longitude = j['longitude']
+		#send_url = 'http://freegeoip.net/json'
+		#r = requests.get(send_url)
+		#j = json.loads(r.text)
+		#latitude = j['latitude']
+		#longitude = j['longitude']
 		print(latitude,longitude)
 		#latitude = 42.36
 		#longitude = -71.06
 
 		# Get lat, long of destination
-		destination = request.form.get('destination')
+		destination = destination_address #request.form.get('destination')
 		DESTINATION = destination
 		destination = destination.replace(' ', '+')
 		response = requests.get('https://maps.googleapis.com/maps/api/geocode/json?address=' + destination)
@@ -694,34 +712,57 @@ def profile():
 	else:
 		uid = getUserIdFromEmail(flask_login.current_user.id)
 		cursor = conn.cursor()
-		cursor.execute("SELECT email, first_name, last_name, dob, address FROM Users WHERE user_id = '{0}'".format(uid))
+		cursor.execute("SELECT email, first_name, last_name, gender, dob, address FROM Users WHERE user_id = '{0}'".format(uid))
 		personal_data = cursor.fetchall()
-		cursor.execute("SELECT location, access_date FROM Favorites WHERE user_id = '{0}' LIMIT 5".format(uid))
-		favs = cursor.fetchall()
-
-
-		api_url = 'https://maps.googleapis.com/maps/api/geocode/json?latlng=' + str(latitude) + ',' + str(longitude) + '&key=' + geocode_key
-		return_value = requests.get(api_url)
-		return_value_json = json.loads(return_value.text)
-		address = return_value_json['results'][1]['formatted_address']
-		return render_template("profile.html", data=personal_data)
+		full_date = str(personal_data[0][4])
+		
+		year = full_date[:4]
+		month = full_date[5:7]
+		day = full_date[8:]
+		print(day,month,year)
+		addr_split = personal_data[0][5].split(',')
+		print(addr_split)
+		if len(addr_split) != 4:
+			final_address = [personal_data[0][5], "N/A", "N/A", "N/A"]
+		else:
+			final_address = [addr_split[0], addr_split[1], addr_split[2], addr_split[3]]
+		addr = final_address[0].split()
+		real_addr = ''
+		for i in range(len(addr)):
+			if i != len(addr) - 1:
+				real_addr += addr[i]+'-'
+			else:
+				real_addr += addr[i]
+		print(real_addr)
+		city = final_address[1]
+		state = final_address[2]
+		zipcode = final_address[3]
+		profile_data = [personal_data[0][0], personal_data[0][1], personal_data[0][2], personal_data[0][3], day,month,year,real_addr,city,state,zipcode]
+		return render_template("profile.html", data=profile_data)
 
 
 @flask_login.login_required
-@app.route("/favorites", methods=['GET', 'POST'])
+@app.route("/history", methods=['GET', 'POST'])
 def favorites():
+	uid = getUserIdFromEmail(flask_login.current_user.id)
 	cursor = conn.cursor()
 
-	cursor.execute("SELECT location, access_date FROM Favorites WHERE user_id = '{0}' LIMIT 5".format(uid))
+	cursor.execute("SELECT location, access_date FROM Favorites WHERE user_id = '{0}' ORDER BY access_date DESC LIMIT 5".format(uid))
 	favs = cursor.fetchall()
+	address_list = []
+	date_list = []
+	for i in favs:
 
-
-	api_url = 'https://maps.googleapis.com/maps/api/geocode/json?latlng=' + str(latitude) + ',' + str(longitude) + '&key=' + geocode_key
-	return_value = requests.get(api_url)
-	return_value_json = json.loads(return_value.text)
-	address = return_value_json['results'][1]['formatted_address']
-	
-	return render_template('favorites.html', favorites=favs)
+		lat = i[0][1:8]
+		lon = i[0][8:-1]
+		print(lat,lon)
+		api_url = 'https://maps.googleapis.com/maps/api/geocode/json?latlng=' + str(lat) + ',' + str(lon) + '&key=' + geocode_key
+		return_value = requests.get(api_url)
+		return_value_json = json.loads(return_value.text)
+		address = return_value_json['results'][1]['formatted_address']
+		address_list += [str(i[1]) + ': ' + address]
+		print(address_list)
+	return render_template('history.html', history=address_list, dates=date_list)
 # @app.route("/editProfile", methods=['GET', 'POST'])
 # def edit_user():
 # 	cursor = conn.cursor()
