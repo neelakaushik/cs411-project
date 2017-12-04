@@ -68,7 +68,7 @@
       <h3>What's your destination?</h3>
       <form id="DestinationForm" method="post" action="/Main">
       <label for="destination"></label>
-      <input type="text" id="destination" name="destination" size=60 style="float:left;height:30px;margin-left: 40px;margin-left:40px;margin-top: 29px">
+      <input type="text" id="destination" name="destination" size=55 style="float:left;height:30px;margin-left: 40px;margin-left:40px;margin-top: 29px">
       <input type="submit" id="destination-submit" style="float:left;margin-left:30px;width:40px; height:30px" value="Go" />
       </form>
 
@@ -76,29 +76,16 @@
       <div style="clear:both;"></div>
       <br><br><br>
       <form action = "mbta" method="post">
-        <input type="submit" id="mbta-button" onclick="showMBTA()" style="margin-left:30px;width:150px; height:30px" value="MBTA" />
+        <input type="submit" style="float:left;margin-left:40px;background:#246703" value="See MBTA Options" />
       </form>
-<!-- 
-      <input type="button" id="mbta-button" class="mbta-button" onclick="showMBTA();" value="See Nearest MBTA Options" style="margin-left: 40px">
-      <input type="button" id="lyft-button" class="lyft-button" onclick="showLyft();" value="See Nearest Lyft Options" style="margin-left: 45px">
- -->
+      <form action = "Lyftsummary" method="post">
+        <input type="submit" style="float:left;margin-left:40px;background:#ff00bf" value="See Lyft Options" />
+      </form>
+
       <div style="clear:both;"></div>
 
     </div>
 
-    <div id="mbta-view" style="display:none">
-
-      <h2> MBTA Results </h2>
-      {% for your_list_element in mbta_info %}
-            {% if 'miles' in your_list_element %}
-                <p><a href="http://www.google.com">{{ your_list_element }}</a> </p>
-            {% else %}
-                <p>{{ your_list_element }} </p>
-            {% endif %}
-
-      {% endfor %}
-
-    </div>
 
     <div id="lyft-view" style="display:none">
 
