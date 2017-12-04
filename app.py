@@ -37,7 +37,7 @@ mysql = MySQL()
 app = Flask(__name__)
 app.secret_key = 'super secret string'
 app.config['MYSQL_DATABASE_USER'] = 'root'
-app.config['MYSQL_DATABASE_PASSWORD'] = 'hamburger1'
+app.config['MYSQL_DATABASE_PASSWORD'] = 'welcome1'
 app.config['MYSQL_DATABASE_DB'] = 'crimebuddy'
 app.config['MYSQL_DATABASE_HOST'] = '127.0.0.1'
 mysql.init_app(app)
@@ -121,25 +121,12 @@ def login():
 	email = request.form['email']
 	cursor = conn.cursor()
 	#check if email is registered
-	headers = {'Content-Type': 'application/json'}
-	data = '{"grant_type": "authorization_code", "code": "' + authorization_code + '"}'
-	authorization = requests.post('https://api.lyft.com/oauth/token', headers=headers, data=data, auth=HTTPBasicAuth(client_id, client_secret))
-	token_info = json.loads(authorization.text)
-	token_type = token_info["token_type"]
-	access_token = token_info["access_token"]
-	headers = {'Authorization': token_type + ' ' + access_token}
-	lyft_request = requests.get('https://api.lyft.com/v1/profile', headers=headers)
-	profile = json.loads(lyft_request.text)
-
-	lyft_unique_id = profile['id']
 	
 	if cursor.execute("SELECT password FROM Users WHERE email = '{0}'".format(email)):
 		data = cursor.fetchall()
 		pwd = str(data[0][0] )
 		uid = getUserIdFromEmail(email)
-		cursor.execute("SELECT lyft_id FROM Lyft WHERE user_id = '{0}'".format(uid))
-		user_lyft_id = cursor.fetchall()
-		if request.form['password'] == pwd and lyft_unique_id == user_lyft_id[0][0]:
+		if request.form['password'] == pwd:
 			user = User()
 			user.id = email
 			flask_login.login_user(user) #okay login in user
@@ -296,7 +283,7 @@ def success():
 		#j = json.loads(r.text)
 		#lat = j['latitude']
 		#lon = j['longitude']
-
+		print(address)
 		location = g.geocode(address)
 		latitude = location.latitude
 		longitude = location.longitude
@@ -378,7 +365,7 @@ def success():
 				danger_val = 5
 
 
-		message = 'The crime data from the last' + length_type + ' shows that the area within ' + str(radius) + ' of your current location is most likely to be '
+		message = 'The crime data from the last' + length_type + ' shows that the area within ' + str(radius) + ' miles of your current location is most likely to be '
 		
 		if danger_val == 1 or danger_val == 0:
 			message += 'very safe.'
@@ -759,10 +746,10 @@ def favorites():
 	address_list = []
 	date_list = []
 	for i in favs:
-
-		lat = i[0][1:8]
-		lon = i[0][8:-1]
-		print(lat,lon)
+		print(i)
+		latlon = str(i[0]).split('-')
+		lat = str(latlon[0])[1:]
+		lon = '-'+ str(latlon[1])[:-1]
 		api_url = 'https://maps.googleapis.com/maps/api/geocode/json?latlng=' + str(lat) + ',' + str(lon) + '&key=' + geocode_key
 		return_value = requests.get(api_url)
 		return_value_json = json.loads(return_value.text)
