@@ -49,7 +49,7 @@ app = Flask(__name__)
 app.secret_key = 'super secret string'
 app.config['MYSQL_DATABASE_USER'] = 'root'
 app.config['MYSQL_DATABASE_PASSWORD'] = 'welcome1'
-app.config['MYSQL_DATABASE_DB'] = 'test3'
+app.config['MYSQL_DATABASE_DB'] = 'crimebuddy'
 app.config['MYSQL_DATABASE_HOST'] = '127.0.0.1'
 mysql.init_app(app)
 
@@ -743,9 +743,28 @@ def Lyftsummary():
 
 		# Get lat, long of destination
 		destination = request.form.get('destination')
-		DESTINATION = destination
-		if DESTINATION == None:
-			return render_template("Lyftsummary.html", message="There was an error processing your address, please enter it again", data=final_info)
+		if destination == "":
+			register_message = "Please enter your destination!"
+			return render_template("main.html", destination_message="Please enter a valid address!")
+		else:
+			DESTINATION = destination
+
+		# try:
+		# 	destination = request.form.get('destination')
+		# 	DESTINATION = destination
+		# 	print('here')
+		# 	print(destination)
+		# except:
+		# 	print("couldn't find all tokens") #this prints to shell, end users will not see this (all print statements go to shell)
+		# 	register_message = "Please enter your destination!"
+		# 	return render_template("main.html", destination_message="Please enter a valid address!")
+		# 	#return flask.redirect(flask.url_for('Main'))
+
+
+		print(destination)
+		# if DESTINATION == None:
+		# 	print('here')
+		# 	return render_template("Lyftsummary.html", message="There was an error processing your address, please enter it again", data=final_info)
 
 		#destination = destination.replace(' ', '+')
 		response = requests.get('https://maps.googleapis.com/maps/api/geocode/json?address=' + destination)
