@@ -542,9 +542,10 @@ def get_mbta_api(parameters):
 		mbta_stops[stop] = [stop_lat, stop_lon]
 
 		directions = get_directions(stop_lat, stop_lon)
-		message.append(directions)
 
 		message.append(stop + " is " + str(distance) + " miles away from you\n")
+		message.append(directions)
+
 
 		# get lines that pass through each stop
 		route_params = {"api_key": MBTA_key, "stop": stop_id, "format":"json"}
@@ -745,7 +746,7 @@ def Lyftsummary():
 			if (ride["display_name"] == None or ride["eta_seconds"] == None):
 				final_info = None
 				return render_template("Lyftsummary.html", message="There was an error processing your ride request, please enter your address again", data=final_info)
-			if ride["display_name"] == "Lyft line" or ride["display_name"] == "Lyft": 
+			if ride["display_name"] == "Lyft Line" or ride["display_name"] == "Lyft": 
 				ride_type += [ride["display_name"] + ": ETA: " + str(ride["eta_seconds"]/60) + " minutes"]
 				print("\t" + ride["display_name"] + ": ETA: " + str(ride["eta_seconds"]/60) + " minutes")
 		
@@ -755,7 +756,7 @@ def Lyftsummary():
 		print( "These are your options with Ride Type, Cost Estimate, Estimated Duration, and Estimated Distance based on your current location and destination:")
 		cost_estimate = []
 		for ride in list_of_rides['cost_estimates']:
-			if ride["display_name"] == "Lyft line" or ride["display_name"] == "Lyft":
+			if ride["display_name"] == "Lyft Line" or ride["display_name"] == "Lyft":
 				cost = ((ride["estimated_cost_cents_min"] + ride["estimated_cost_cents_max"])/2) / 100
 				cost_estimate += [ride["display_name"] + ": Cost Estimate: " + "$" + ("%.2f" % cost) + ": Estimated Duration: " + \
 				str("%.2f" %(ride['estimated_duration_seconds']/ 60)) + " minutes" + " Estimated Distance: " + str(ride['estimated_distance_miles']) + " miles"]
