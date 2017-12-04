@@ -49,7 +49,7 @@ app = Flask(__name__)
 app.secret_key = 'super secret string'
 app.config['MYSQL_DATABASE_USER'] = 'root'
 app.config['MYSQL_DATABASE_PASSWORD'] = 'welcome1'
-app.config['MYSQL_DATABASE_DB'] = 'crimebuddy'
+app.config['MYSQL_DATABASE_DB'] = 'test2'
 app.config['MYSQL_DATABASE_HOST'] = '127.0.0.1'
 mysql.init_app(app)
 
@@ -238,7 +238,7 @@ def register_user():
 		return flask.redirect(flask.url_for('register'))
 	cursor = conn.cursor()
 
-
+	message = success()
 	# Get Access Token
 	headers = {'Content-Type': 'application/json'}
 	data = '{"grant_type": "authorization_code", "code": "' + authorization_code + '"}'
@@ -258,9 +258,7 @@ def register_user():
 	real_last_name =''
 	for i in range(len(temp_split)):
 		real_last_name += temp_split[i]
-
-
-
+	
 	test =  isEmailUnique(email)
 	test2 = isLyftIDUnique(profile['id'])
 	if test and test2:
@@ -270,9 +268,15 @@ def register_user():
 		user = User()
 		user.id = email
 		flask_login.login_user(user)
-
 		uid = getUserIdFromEmail(flask_login.current_user.id)
-		conn.commit()
+		try:
+			cursor.execute("INSERT INTO Lyft (user_id, lyft_first_name, lyft_last_name, lyft_id) VALUES ('{0}', '{1}', '{2}', '{3}')".format(uid, profile['first_name'], real_last_name, profile['id']))
+			conn.commit()
+		except:
+			return render_template('register.html', message="There is already a record of your Lyft account in our system! Try logging in, or use a different lyft account!")
+	
+		
+		# conn.commit()
 		# List User's Ride History
 		lyft_request = requests.get('https://api.lyft.com/v1/rides?start_time=2015-12-01T21:04:22Z', headers=headers)
 		print(lyft_request)
@@ -281,7 +285,7 @@ def register_user():
 		for ride in rides["ride_history"]:
 			if ride['status'] == 'droppedOff':
 				print("Date/Time of Trip: " + str(ride['dropoff']['time']) + " , Dropped off at: " + str(ride['dropoff']['address']) + " (Distance: " + str(ride['distance_miles']) + " miles)")
-		return render_template('main.html', message = success(), create_message='Account Created!')
+		return flask.redirect(flask.url_for('protected'))
 	else:
 		print("couldn't find all tokens")
 		register_message = "Something went wrong! Please try again!"
