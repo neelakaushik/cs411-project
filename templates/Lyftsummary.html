@@ -26,7 +26,9 @@
     <script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA8JL8SGkgJP3Nksz5ZaT3GJ1Wt_igN24w&callback=initMap&v=3.exp&sensor=false&libraries=places"></script>
 
   </head>
-
+{% if message %}
+  <h4>{{message}}</h4>
+  {% endif %}
 <body>
 
     <div id="menuButton" onclick="toggleMenu('dropdown-content');">
