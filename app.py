@@ -194,8 +194,33 @@ def register_user():
 		print("couldn't find all tokens") #this prints to shell, end users will not see this (all print statements go to shell)
 		return flask.redirect(flask.url_for('register'))
 	cursor = conn.cursor()
+
+
+	# Get Access Token
+	headers = {'Content-Type': 'application/json'}
+	data = '{"grant_type": "authorization_code", "code": "' + authorization_code + '"}'
+	authorization = requests.post('https://api.lyft.com/oauth/token', headers=headers, data=data, auth=HTTPBasicAuth(client_id, client_secret))
+	token_info = json.loads(authorization.text)
+	token_type = token_info["token_type"]
+	access_token = token_info["access_token"]
+
+	headers = {'Authorization': token_type + ' ' + access_token}
+	# User Profile Info
+	lyft_request = requests.get('https://api.lyft.com/v1/profile', headers=headers)
+	print(lyft_request)
+	profile = json.loads(lyft_request.text)
+	print(profile)
+	print("Your profile information:\t" + "Name: " + profile['first_name'] + " " + profile['last_name'] + " , ID: " + profile['id'])
+	temp_split = profile['last_name'].split("'")
+	real_last_name =''
+	for i in range(len(temp_split)):
+		real_last_name += temp_split[i]
+
+
+
 	test =  isEmailUnique(email)
-	if test:
+	test2 = isLyftIDUnique(profile['id'])
+	if test and test2:
 		print(cursor.execute("INSERT INTO Users (email, password, first_name, last_name, dob, gender, address) VALUES ('{0}', '{1}', '{2}', '{3}', '{4}', '{5}', '{6}')".format(email, password, first_name, last_name, dob, gender, address)))
 		conn.commit()
 		#log user in
@@ -203,30 +228,7 @@ def register_user():
 		user.id = email
 		flask_login.login_user(user)
 
-		#Record Lyft Information
-
-		# Get Access Token
-		headers = {'Content-Type': 'application/json'}
-		data = '{"grant_type": "authorization_code", "code": "' + authorization_code + '"}'
-		authorization = requests.post('https://api.lyft.com/oauth/token', headers=headers, data=data, auth=HTTPBasicAuth(client_id, client_secret))
-		token_info = json.loads(authorization.text)
-		token_type = token_info["token_type"]
-		access_token = token_info["access_token"]
-		
-		headers = {'Authorization': token_type + ' ' + access_token}
 		uid = getUserIdFromEmail(flask_login.current_user.id)
-		# User Profile Info
-		lyft_request = requests.get('https://api.lyft.com/v1/profile', headers=headers)
-		print(lyft_request)
-		profile = json.loads(lyft_request.text) 
-		print(profile)
-		print("Your profile information:\t" + "Name: " + profile['first_name'] + " " + profile['last_name'] + " , ID: " + profile['id'])
-		temp_split = profile['last_name'].split("'")
-		real_last_name =''
-		for i in range(len(temp_split)):
-			real_last_name += temp_split[i]
-
-		cursor.execute("INSERT INTO Lyft (user_id, lyft_first_name, lyft_last_name, lyft_id) VALUES ('{0}', '{1}', '{2}', '{3}')".format(uid, profile['first_name'], real_last_name, profile['id']))
 		conn.commit()
 		# List User's Ride History
 		lyft_request = requests.get('https://api.lyft.com/v1/rides?start_time=2015-12-01T21:04:22Z', headers=headers)
@@ -260,7 +262,12 @@ def isEmailUnique(email):
 		return False
 	else:
 		return True
-
+def isLyftIDUnique(lyft_id):
+        cursor = conn.cursor()
+        if cursor.execute("SELECT lyft_id FROM Lyft WHERE lyft_id = '{0}'".format(lyft_id)):
+                return False
+        else:
+                return True
 
 @app.route('/main')
 @flask_login.login_required
