@@ -159,8 +159,10 @@ def login():
 		return render_template('login.html')
 	#The request method is POST (page is recieving data)
 	address = request.form['location']
+	print(address)
 	email = request.form['email']
 	cursor = conn.cursor()
+
 	#check if email is registered
 	
 	if cursor.execute("SELECT password FROM Users WHERE email = '{0}'".format(email)):
@@ -347,7 +349,6 @@ def success():
 		#j = json.loads(r.text)
 		#lat = j['latitude']
 		#lon = j['longitude']
-		print(address)
 		location = g.geocode(address)
 		latitude = location.latitude
 		longitude = location.longitude
