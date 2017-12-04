@@ -36,7 +36,7 @@ mbta_stops = {}		#{stop_name : [stop_lat, stop_lon]}
 address = ''
 register_message = None
 GENERIC_ADDRESS = '725 Commonwealth Ave, Boston, MA'
-
+destination_address = '540 Commonwealth Avenue, Boston, MA'		#currently hardcoded
 
 
 #This section locates the database and creates a connection via password and local host
@@ -505,7 +505,11 @@ def success():
 @app.route("/Main", methods=['GET', 'POST'])
 def get_global_destination():
 	global destination_address 
-	destination_address  = request.form.get('destination')
+	try:
+		destination_address  = request.form.get('destination')
+	except:
+		destination_address = '540 Commonwealth Avenue, Boston, MA'
+	print ("destination_address: ", destination_address)
 	return render_template('main.html', supress='True')  
 
 def get_directions(stop_lat, stop_lon):
@@ -612,11 +616,43 @@ def get_mbta_api(parameters):
 							message.append(temp_route + " - ETA " + str(leftover) + " seconds")
 					except:
 						message.append(temp_route + " - ETA information unavailable")
+	
 
-	return (message)
+	end_stops = get_destination_info()
+	message += end_stops
+	return(message)
+
+# Used to filter the stops data
+def project(R, p):
+    return [p(t) for t in R]
+
+def get_destination_info():
+	global start_lines
+
+	message = []
+	top_stops = get_destination_stops()
+	lines = project(top_stops, lambda t: (t[0], t[1][3:]))
+
+	filtered = [x for x in lines if ' - Inbound' not in x[0] and ' - Outbound' not in x[0]]
+
+	for i in start_lines:
+		if i.isdigit() == True:
+			message.append("If you take the " +  i + " bus, the stops closest to your destination are: ")
+		else:
+			message.append("If you take the " + i + " train, the stops closest to your destination are: ")
+		found = False
+		for j in filtered:
+			if i in j[1]:
+				message.append(j[0])
+				found = True 
+		if found == False:
+			message.append("None. Consider alternate transportation options")
+	return(message)
+
 
 def get_destination_stops():
 	global start_lines
+	global destination_address
 
 	# get address from form 
 	# address = request.form.get('loc')
