@@ -121,9 +121,24 @@ input[type="first-name"],
 input[type="last-name"],
 input[type="email"],
 input[type="password"],
-input[type="password-2"],
 input[type="street"]
- {
+{
+  display: block;
+  box-sizing: border-box;
+  margin-left: 110px;
+  margin-bottom: 20px;
+  padding: 4px;
+  width: 400px;
+  height: 32px;
+  border: none;
+  border-bottom: 1px solid #4c4c4c;
+  font-family: 'Roboto', sans-serif;
+  font-weight: 400;
+  transition: 0.2s ease;
+  background-color: #f3f3f5
+}
+
+input[type="location"] {
   display: block;
   box-sizing: border-box;
   margin-left: 110px;
@@ -179,10 +194,11 @@ input[type="first-name"]:focus,
 input[type="last-name"]:focus,
 input[type="email"]:focus,
 input[type="password"],:focus,
-input[type="password-2"]:focus,
 input[type="street"]:focus,
 input[type="city"]:focus,
-input[type="zipcode"]:focus  {
+input[type="zipcode"]:focus,
+input[type="location"]:focus
+  {
   border-bottom: 2px solid #00A99F;
   color: #00A99F;
   transition: 0.2s ease;
@@ -220,9 +236,9 @@ input[type="submit"]:active {
 
 #registration-box {
   position: relative;
-  margin: 2%auto;
+  margin: 1.5%auto;
   width: 600px;
-  height: 750px;
+  height: 775px;
   padding: 2px;
   background: #FFF;
   border-radius: 2px;
