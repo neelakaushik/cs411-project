@@ -18,8 +18,11 @@ import pprint
 import dateutil.parser 
 import numpy as np 
 import operator
+import urllib.request
+import urllib.parse
+import re
 
-
+#This section initializes global variables
 authorization_code = None
 latitude = 0
 longitude = 0
@@ -32,12 +35,18 @@ start_lines = []
 mbta_stops = {}		#{stop_name : [stop_lat, stop_lon]}
 address = ''
 
+
+
+#This section locates the database and creates a connection via password and local host
+
+########################################################################################
+
 mysql = MySQL()
 
 app = Flask(__name__)
 app.secret_key = 'super secret string'
 app.config['MYSQL_DATABASE_USER'] = 'root'
-app.config['MYSQL_DATABASE_PASSWORD'] = 'welcome1'
+app.config['MYSQL_DATABASE_PASSWORD'] = 'hamburger1'
 app.config['MYSQL_DATABASE_DB'] = 'crimebuddy'
 app.config['MYSQL_DATABASE_HOST'] = '127.0.0.1'
 mysql.init_app(app)
@@ -48,6 +57,14 @@ cursor.execute("SELECT email FROM Users")
 users = cursor.fetchall()
 login_manager = flask_login.LoginManager()
 login_manager.init_app(app)
+########################################################################################
+
+
+
+
+
+
+
 
 # Grab API keys
 with open('config.json') as f:
@@ -60,6 +77,14 @@ geocode_key = credentials["geocode_key"]
 g = geocoders.GoogleV3(api_key = geocode_key)
 
 
+
+
+
+
+
+#This section initializes our app, sending the first access to index.html, as well as identifies users and the login manager
+
+########################################################################################
 @flask_login.login_required
 @app.route("/", methods=['GET', 'POST'])
 def main():
@@ -97,13 +122,29 @@ def request_loader(request):
 	pwd = str(data[0][0] )
 	user.is_authenticated = request.form['password'] == pwd 
 	return user
+########################################################################################
 
-'''
-A new page looks like this:
-@app.route('new_page_name')
-def new_page_function():
-	return new_page_html
-'''
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#This section handles logging in, logging out, and Lyft 3rd Party Verification, as well as unauthorized users
+
+########################################################################################
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -161,7 +202,9 @@ def register():
 @app.route("/register", methods=['POST'])
 def register_user():
 	global authorization_code
+	global address
 
+	address = request.form['location']
 	try:
 		email=request.form.get('email')
 		password=request.form.get('password')
@@ -261,8 +304,29 @@ def isLyftIDUnique(lyft_id):
 def protected():
 	return render_template('main.html', name=flask_login.current_user.id, message=success())
 
+########################################################################################
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#This section utilizes the SpotCrime API and determines the safety of your location, according to our algorithm
+
+########################################################################################
 
 def success():
 	global final_message
@@ -385,6 +449,29 @@ def success():
 		conn.commit()
 		return final_message
 
+########################################################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#This section handles all calls and manipulations of the MBTA API. This includes finding the closest stops as well as stops near your destination
+
+########################################################################################
 
 @app.route("/Main", methods=['GET', 'POST'])
 def get_global_destination():
@@ -392,7 +479,40 @@ def get_global_destination():
 	destination_address  = request.form.get('destination')
 	return render_template('main.html', supress='True')  
 
+def get_directions(stop_lat, stop_lon):
+	global latitude
+	global longitude
+	url = "https://maps.googleapis.com/maps/api/directions/json?"
 
+	origin="origin=" + str(latitude) + "," + str(longitude) + "&" 
+	destination="destination=" + str(stop_lat) + "," + str(stop_lon) + "&"
+	rest = "&mode=walking&language=en&key" + geocode_key
+
+	f = urllib.request.urlopen(url + origin + destination + rest)
+
+	text = f.read()
+	p = json.loads(text.decode('utf-8'))
+	legs = str(p['routes'])
+	legs = legs.strip('[')
+	legs = legs.strip(']')
+	results = ""
+	for char in re.finditer('html_instructions', legs):
+	    test = legs[char.start():].find(',')
+
+	    final = (legs[char.start():test+char.start()+1])
+	    final = final.strip("'html_instructions': ")
+	    parts = (final.split('b>'))
+	    for i in parts:
+	        temp = i
+	        i = i.replace('<', '')
+	        i = i.replace('/', '')
+	        idx = parts.index(temp)
+	        parts[idx] = i
+
+	    parts=parts[:-1]
+	    results+= "".join(parts) +". "
+
+	return(results)
 def get_mbta_api(parameters):
 	''' returns a message to display on the next page '''
 	global mbta_stops
@@ -420,6 +540,9 @@ def get_mbta_api(parameters):
 		if count > 5: 
 			break
 		mbta_stops[stop] = [stop_lat, stop_lon]
+
+		directions = get_directions(stop_lat, stop_lon)
+		message.append(directions)
 
 		message.append(stop + " is " + str(distance) + " miles away from you\n")
 
@@ -527,7 +650,7 @@ def get_destination_stops():
 	return (top_stops)	# top_stops = {'stop name': [distance, str(lat), str(lon), lines in common with starting stops]}
 
 
-@app.route("/mbta", methods=['GET','POST'])
+@app.route("/mbta", methods=['POST'])
 def get_coords():
 	global latitude
 	global longitude
@@ -546,6 +669,27 @@ def get_coords():
 	mbta_info = get_mbta_api(parameters)
 	return render_template('mbta.html', mbta_info=mbta_info)
 
+########################################################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#This section handles all actions that use the Lyft API, including getting cost estimates, arrival estimates, and the capability to call a Lyft
+
+
+########################################################################################
 
 @flask_login.login_required
 @app.route("/Lyftsummary", methods=['GET', 'POST'])
@@ -601,8 +745,9 @@ def Lyftsummary():
 			if (ride["display_name"] == None or ride["eta_seconds"] == None):
 				final_info = None
 				return render_template("Lyftsummary.html", message="There was an error processing your ride request, please enter your address again", data=final_info)
-			ride_type += [ride["display_name"] + ": ETA: " + str(ride["eta_seconds"]/60) + " minutes"]
-			print("\t" + ride["display_name"] + ": ETA: " + str(ride["eta_seconds"]/60) + " minutes")
+			if ride["display_name"] == "Lyft line" or ride["display_name"] == "Lyft": 
+				ride_type += [ride["display_name"] + ": ETA: " + str(ride["eta_seconds"]/60) + " minutes"]
+				print("\t" + ride["display_name"] + ": ETA: " + str(ride["eta_seconds"]/60) + " minutes")
 		
 		# Cost Estimate
 		lyft_request = requests.get('https://api.lyft.com/v1/cost?start_lat=' + str(latitude) + '&start_lng=' + str(longitude) + '&end_lat=' + str(end_lat) + '&end_lng=' + str(end_long), headers=headers)
@@ -610,12 +755,13 @@ def Lyftsummary():
 		print( "These are your options with Ride Type, Cost Estimate, Estimated Duration, and Estimated Distance based on your current location and destination:")
 		cost_estimate = []
 		for ride in list_of_rides['cost_estimates']:
-			cost = ((ride["estimated_cost_cents_min"] + ride["estimated_cost_cents_max"])/2) / 100
-			cost_estimate += [ride["display_name"] + ": Cost Estimate: " + "$" + ("%.2f" % cost) + ": Estimated Duration: " + \
-			str("%.2f" %(ride['estimated_duration_seconds']/ 60)) + " minutes" + " Estimated Distance: " + str(ride['estimated_distance_miles']) + " miles"]
+			if ride["display_name"] == "Lyft line" or ride["display_name"] == "Lyft":
+				cost = ((ride["estimated_cost_cents_min"] + ride["estimated_cost_cents_max"])/2) / 100
+				cost_estimate += [ride["display_name"] + ": Cost Estimate: " + "$" + ("%.2f" % cost) + ": Estimated Duration: " + \
+				str("%.2f" %(ride['estimated_duration_seconds']/ 60)) + " minutes" + " Estimated Distance: " + str(ride['estimated_distance_miles']) + " miles"]
 
-			print("\t" + ride["display_name"] + ": Cost Estimate: " + "$" + ("%.2f" % cost) + ": Estimated Duration: " + \
-			str("%.2f" %(ride['estimated_duration_seconds']/ 60)) + " minutes" + " Estimated Distance: " + str(ride['estimated_distance_miles']) + " miles")
+				print("\t" + ride["display_name"] + ": Cost Estimate: " + "$" + ("%.2f" % cost) + ": Estimated Duration: " + \
+				str("%.2f" %(ride['estimated_duration_seconds']/ 60)) + " minutes" + " Estimated Distance: " + str(ride['estimated_distance_miles']) + " miles")
 		final_info = [ride_type, cost_estimate]
 		# Request a Lyft (requires user login - get into user's lyft account)
 		
@@ -653,40 +799,16 @@ def RequestLyft():
 	return render_template('requested_lyft.html')
 
 
+########################################################################################
 
 
-# @app.route("/Lyftlogin", methods=['GET', 'POST'])
-# def Lyftlogin():
-# 	global authorization_code
 
-# 	# Get Access Token
-# 	headers = {'Content-Type': 'application/json'}
-# 	data = '{"grant_type": "authorization_code", "code": "' + authorization_code + '"}'
-# 	authorization = requests.post('https://api.lyft.com/oauth/token', headers=headers, data=data, auth=HTTPBasicAuth(client_id, client_secret))
-# 	token_info = json.loads(authorization.text)
-# 	token_type = token_info["token_type"]
-# 	access_token = token_info["access_token"]
-	
-# 	headers = {'Authorization': token_type + ' ' + access_token}
-	
-# 	# User Profile Info
-# 	lyft_request = requests.get('https://api.lyft.com/v1/profile', headers=headers)
-# 	print(lyft_request)
-# 	profile = json.loads(lyft_request.text) 
-# 	print("Your profile information:\t" + "Name: " + profile['first_name'] + " " + profile['last_name'] + " , ID: " + profile['id'])  
 
-# 	# List User's Ride History
-# 	lyft_request = requests.get('https://api.lyft.com/v1/rides?start_time=2015-12-01T21:04:22Z', headers=headers)
-# 	print(lyft_request)
-# 	rides = json.loads(lyft_request.text)
-# 	print('This is your ride history:')
-# 	for ride in rides["ride_history"]:
-# 		print("Date/Time of Trip: " + str(ride['dropoff']['time']) + " , Dropped off at: " + str(ride['dropoff']['address']) + " (Distance: " + str(ride['distance_miles']) + " miles)")
-	
-# 	# Request a Lyft
-# 	#requests.post(
 
-# 	return "hi"
+
+
+
+
 
 @app.route("/Lyfttemp", methods=['GET', 'POST'])
 def lyfttemp():
@@ -696,6 +818,23 @@ def lyfttemp():
 
 	print(authorization_code)
 	return render_template('register.html')
+
+
+
+
+
+
+
+
+
+
+
+
+
+#This section accesses user data, and displays it on the user's profile and history of searches
+
+########################################################################################
+
 
 @flask_login.login_required
 @app.route("/profile", methods=['GET', 'POST'])
@@ -757,35 +896,13 @@ def favorites():
 		address_list += [str(i[1]) + ': ' + address]
 		print(address_list)
 	return render_template('history.html', history=address_list, dates=date_list)
-# @app.route("/editProfile", methods=['GET', 'POST'])
-# def edit_user():
-# 	cursor = conn.cursor()
-# 	try:
-# 		if request.form.get('email') == '':
-# 			cursor.execute("")
-# 		email=request.form.get('email')
-# 		password=request.form.get('password')
-# 		first_name=request.form.get('first_name')
-# 		last_name=request.form.get('last_name')
-# 		dob=request.form.get('dob')
-# 		gender=request.form.get('gender')
-# 		address=request.form.get('address')
-# 	except:
-# 		print("couldn't find all tokens") #this prints to shell, end users will not see this (all print statements go to shell)
-# 		return flask.redirect(flask.url_for('register'))
-# 	cursor = conn.cursor()
-# 	test =  isEmailUnique(email)
-# 	if test:
-# 		print(cursor.execute("INSERT INTO Users (email, password, first_name, last_name, dob, gender, address) VALUES ('{0}', '{1}', '{2}', '{3}', '{4}', '{5}', '{6}')".format(email, password, first_name, last_name, dob, gender, address)))
-# 		conn.commit()
-# 		#log user in
-# 		user = User()
-# 		user.id = email
-# 		flask_login.login_user(user)
-# 		return render_template('search.html', message='Account Created!')
-# 	else:
-# 		print("couldn't find all tokens")
-# 		return flask.redirect(flask.url_for('register'))
+
+########################################################################################
+
+
+
+
+
 
 
 if __name__ == "__main__":
